@@ -145,7 +145,7 @@
 //     }
 //   }
 // }
-import 'dart:html' as html; // Only works on Web
+import 'dart:html' as html; // For web localStorage
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -153,13 +153,11 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-
+import 'package:uuid/uuid.dart';
 
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/data/app_prefernces.dart';
 import 'package:leasure_nft/app/routes/app_routes.dart';
-import 'package:uuid/uuid.dart';
 
 class LoginController extends GetxController {
   TextEditingController passwordController = TextEditingController();
@@ -182,14 +180,15 @@ class LoginController extends GetxController {
     String deviceId = 'unknown_device';
 
     if (kIsWeb) {
-      // Web: Store UUID in localStorage
-      deviceId = html.window.localStorage['deviceId'] ?? '';
-      if (deviceId.isEmpty) {
-        deviceId = Uuid().v4();
+      // SAFELY read deviceId from localStorage and handle type errors
+      final stored = html.window.localStorage['deviceId'];
+      if (stored is String && stored.isNotEmpty) {
+        deviceId = stored;
+        Get.log("[DEBUG] Existing Web Device ID: $deviceId");
+      } else {
+        deviceId = const Uuid().v4();
         html.window.localStorage['deviceId'] = deviceId;
         Get.log("[DEBUG] New Web Device ID: $deviceId");
-      } else {
-        Get.log("[DEBUG] Existing Web Device ID: $deviceId");
       }
     } else {
       DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
@@ -220,7 +219,7 @@ class LoginController extends GetxController {
         return;
       }
 
-      // Step 2: Authenticate user
+      // Step 2: Validate input
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
       if (email.isEmpty || password.isEmpty) {
@@ -228,6 +227,7 @@ class LoginController extends GetxController {
         return;
       }
 
+      // Step 3: Authenticate user
       UserCredential userCredential = await auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -241,7 +241,7 @@ class LoginController extends GetxController {
         return;
       }
 
-      // Step 3: Check for admin login
+      // Step 4: Admin check
       if (user.email == "admin@gmail.com") {
         AppPrefernces.setAdmin("admin");
         showToast("Admin logged in successfully");
@@ -249,7 +249,7 @@ class LoginController extends GetxController {
         return;
       }
 
-      // Step 4: Fetch user document
+      // Step 5: Fetch user document
       final userDoc = await firestore.collection('users').doc(user.uid).get();
       if (!userDoc.exists) {
         showToast('User not found in database', isError: true);
@@ -260,7 +260,7 @@ class LoginController extends GetxController {
       final isBanned = data?['isUserBanned'] ?? false;
       final storedDeviceId = data?['deviceId'];
 
-      // Step 5: Banned user check
+      // Step 6: Banned user check
       if (isBanned) {
         showToast(
           'Your account has been banned. Please contact admin.',
@@ -269,7 +269,7 @@ class LoginController extends GetxController {
         return;
       }
 
-      // Step 6: Device restriction check
+      // Step 7: Device restriction
       if (storedDeviceId == null) {
         await firestore
             .collection('users')
@@ -284,7 +284,7 @@ class LoginController extends GetxController {
         return;
       }
 
-      // Step 7: Login successful
+      // Step 8: Login success
       showToast('Login successful');
       Get.offAllNamed(AppRoutes.userDashboard);
     } on FirebaseAuthException catch (e) {
