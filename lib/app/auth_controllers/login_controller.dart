@@ -68,6 +68,10 @@ class LoginController extends GetxController {
       // Step 2: Authenticate user
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
+      if (email.isEmpty || password.isEmpty) {
+        showToast('Email and password cannot be empty', isError: true);
+        return;
+      }
 
       UserCredential userCredential = await auth.signInWithEmailAndPassword(
         email: email,
