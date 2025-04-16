@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/data/app_prefernces.dart';
 import 'package:leasure_nft/app/routes/app_routes.dart';
@@ -14,7 +12,6 @@ class LoginController extends GetxController {
   TextEditingController emailController = TextEditingController();
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final GetStorage storage = GetStorage();
   final obscurePassword = true.obs;
   final isLoading = false.obs;
 
@@ -24,54 +21,37 @@ class LoginController extends GetxController {
 
   Future<String> getDeviceId() async {
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    String? storedId = storage.read('deviceId');
+    String deviceId;
 
-    if (storedId == null) {
-      if (GetPlatform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-        storedId = androidInfo.id;
-      } else if (GetPlatform.isIOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        storedId = iosInfo.identifierForVendor;
-      } else if (GetPlatform.isWeb) {
-        WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
-        storedId = webInfo.userAgent ?? 'unknown_web_device';
-      } else {
-        storedId = 'unknown_device';
-      }
-      storage.write('deviceId', storedId);
-      if (kDebugMode) {
-        Get.log("[DEBUG] New Device ID generated: $storedId");
-      }
+    if (GetPlatform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      deviceId = androidInfo.id;
+      Get.log("[DEBUG] Android Device ID: $deviceId");
+    } else if (GetPlatform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
+      Get.log("[DEBUG] iOS Device ID: $deviceId");
+    } else if (GetPlatform.isWeb) {
+      WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
+      deviceId = webInfo.userAgent ?? 'unknown_web_device';
+      Get.log("[DEBUG] Web Device ID: $deviceId");
     } else {
-      if (kDebugMode) {
-        Get.log("[DEBUG] Existing Device ID found: $storedId");
-      }
+      deviceId = 'unknown_device';
+      Get.log("[DEBUG] Fallback Device ID: $deviceId");
     }
-    return storedId!;
+
+    return deviceId;
   }
- void clearControllers() {
+
+  void clearControllers() {
     emailController.clear();
     passwordController.clear();
   }
+
   Future<void> loginUser() async {
     isLoading.value = true;
 
     try {
-      if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-        showToast('Email and password cannot be empty', isError: true);
-        return;
-      }
-      if (!emailController.text.isEmail) {
-        showToast('Invalid email format', isError: true);
-        return;
-      }
-      if (passwordController.text.length < 6) {
-        showToast('Password must be at least 6 characters', isError: true);
-        return;
-      }
-
-
       // Step 1: Get current device ID
       showToast("Fetching device ID...");
       final currentDeviceId = await getDeviceId();
