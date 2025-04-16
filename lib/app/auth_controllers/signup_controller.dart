@@ -46,38 +46,36 @@ class SignupController extends GetxController {
   }
 
   Future<String> getDeviceId() async {
-  String deviceId = 'unknown_device';
+    String deviceId = 'unknown_device';
 
-  if (kIsWeb) {
-    final stored = html.window.localStorage['deviceId'];
-    if (stored is String && stored.isNotEmpty) {
-      deviceId = stored;
-      Get.log("[DEBUG] Existing Web Device ID: $deviceId");
+    if (kIsWeb) {
+      // SAFELY read deviceId from localStorage and handle type errors
+      final stored = html.window.localStorage['deviceId'];
+      if (stored is String && stored.isNotEmpty) {
+        deviceId = stored;
+        Get.log("[DEBUG] Existing Web Device ID: $deviceId");
+      } else {
+        deviceId = const Uuid().v4();
+        html.window.localStorage['deviceId'] = deviceId;
+        Get.log("[DEBUG] New Web Device ID: $deviceId");
+      }
     } else {
-      // Fallback using userAgent hash
-      final userAgent = html.window.navigator.userAgent;
-      final userHash = userAgent.hashCode.toString();
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      if (GetPlatform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id;
+      } else if (GetPlatform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
+      } else {
+        deviceId = 'unsupported_platform';
+      }
+      Get.log("[DEBUG] Native Device ID: $deviceId");
+    }
 
-      deviceId = "web_${const Uuid().v5(Uuid.NAMESPACE_URL, userHash)}";
-      html.window.localStorage['deviceId'] = deviceId;
-      Get.log("[DEBUG] Generated fallback Web Device ID: $deviceId");
-    }
-  } else {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    if (GetPlatform.isAndroid) {
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      deviceId = androidInfo.id;
-    } else if (GetPlatform.isIOS) {
-      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
-    } else {
-      deviceId = 'unsupported_platform';
-    }
-    Get.log("[DEBUG] Native Device ID: $deviceId");
+    return deviceId;
   }
 
-  return deviceId;
-}
   void getReferralFromCookie() {
     if (kIsWeb) {
       final cookies = html.document.cookie?.split('; ') ?? [];
@@ -93,20 +91,34 @@ class SignupController extends GetxController {
 
   Future<bool> canCreateAccount() async {
     String deviceId = await getDeviceId();
-    if (kDebugMode) {
-      Get.log("[DEBUG] Checking device ID in Firestore: $deviceId");
+
+    if (deviceId.isEmpty ||
+        deviceId == 'unknown_device' ||
+        deviceId == 'unsupported_platform') {
+      Get.log("[ERROR] Invalid or empty device ID. Skipping Firestore check.");
+      return false;
     }
 
-    final users = await firestore
-        .collection('users')
-        .where('deviceId', isEqualTo: deviceId)
-        .get();
+    try {
+      if (kDebugMode) {
+        Get.log("[DEBUG] Checking device ID in Firestore: $deviceId");
+      }
 
-    if (kDebugMode) {
-      Get.log(
-          "[DEBUG] Accounts found with this device ID: \${users.docs.length}");
+      final users = await firestore
+          .collection('users')
+          .where('deviceId', isEqualTo: deviceId)
+          .get();
+
+      if (kDebugMode) {
+        Get.log(
+            "[DEBUG] Accounts found with this device ID: ${users.docs.length}");
+      }
+
+      return users.docs.length < 2;
+    } catch (e) {
+      Get.log("[ERROR] Firestore query failed in canCreateAccount: $e");
+      return false;
     }
-    return users.docs.length < 2;
   }
 
   String generateOTP({int length = 6}) {
@@ -166,28 +178,29 @@ https://leasurenft.io
     isloding.value = true;
     try {
       showToast("Creating User...");
-      // if (!await canCreateAccount()) {
-      //   isloding.value = false;
-      //   GetPlatform.isWeb
-      //       ? Fluttertoast.showToast(
-      //           msg: "You cannot create more than 2 accounts from this device",
-      //           toastLength: Toast.LENGTH_SHORT,
-      //           gravity: ToastGravity.BOTTOM,
-      //           backgroundColor: AppColors.errorColor,
-      //           textColor: AppColors.whiteColor,
-      //         )
-      //       : Get.snackbar(
-      //           "Account Creation Error",
-      //           "You cannot create more than 2 accounts from this device",
-      //           snackPosition: SnackPosition.BOTTOM,
-      //           duration: const Duration(seconds: 2),
-      //           backgroundColor: AppColors.errorColor,
-      //           colorText: AppColors.whiteColor,
-      //         );
-      //   return;
-      // }
+      if (!await canCreateAccount()) {
+        isloding.value = false;
+        GetPlatform.isWeb
+            ? Fluttertoast.showToast(
+                msg: "You cannot create more than 2 accounts from this device",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.BOTTOM,
+                backgroundColor: AppColors.errorColor,
+                textColor: AppColors.whiteColor,
+              )
+            : Get.snackbar(
+                "Account Creation Error",
+                "You cannot create more than 2 accounts from this device",
+                snackPosition: SnackPosition.BOTTOM,
+                duration: const Duration(seconds: 2),
+                backgroundColor: AppColors.errorColor,
+                colorText: AppColors.whiteColor,
+              );
+        return;
+      }
       showToast("Creating account...");
       final otp = generateOTP();
+      showToast("Sending OTP... $otp");
 
       // Send OTP
       await sendOTPEmail(emailController.text, otp);
