@@ -13,6 +13,7 @@ import 'package:leasure_nft/app/routes/app_routes.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
 import 'package:universal_html/html.dart' as html;
+import 'package:uuid/uuid.dart';
 
 class SignupController extends GetxController {
   var isObsure = true.obs;
@@ -44,32 +45,34 @@ class SignupController extends GetxController {
   }
 
   Future<String> getDeviceId() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    String? storedId = storage.read('deviceId');
+    String deviceId = 'unknown_device';
 
-    if (storedId == null) {
-      if (GetPlatform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-        storedId = androidInfo.id;
-      } else if (GetPlatform.isIOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        storedId = iosInfo.identifierForVendor;
-      } else if (GetPlatform.isWeb) {
-        WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
-        storedId = webInfo.userAgent ?? 'unknown_web_device';
+    if (kIsWeb) {
+      // SAFELY read deviceId from localStorage and handle type errors
+      final stored = html.window.localStorage['deviceId'];
+      if (stored is String && stored.isNotEmpty) {
+        deviceId = stored;
+        Get.log("[DEBUG] Existing Web Device ID: $deviceId");
       } else {
-        storedId = 'unknown_device';
-      }
-      storage.write('deviceId', storedId);
-      if (kDebugMode) {
-        Get.log("[DEBUG] New Device ID generated: $storedId");
+        deviceId = const Uuid().v4();
+        html.window.localStorage['deviceId'] = deviceId;
+        Get.log("[DEBUG] New Web Device ID: $deviceId");
       }
     } else {
-      if (kDebugMode) {
-        Get.log("[DEBUG] Existing Device ID found: $storedId");
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      if (GetPlatform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id;
+      } else if (GetPlatform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
+      } else {
+        deviceId = 'unsupported_platform';
       }
+      Get.log("[DEBUG] Native Device ID: $deviceId");
     }
-    return storedId!;
+
+    return deviceId;
   }
 
   void getReferralFromCookie() {
@@ -156,149 +159,7 @@ https://leasurenft.io
     }
   }
 
-  // Future<void> createUser() async {
-  //   isloding.value = true;
-
-  //   try {
-  //     // Get.log("[STEP 1] Creating user...");
-
-  //     // UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-  //     //   email: emailController.text.trim(),
-  //     //   password: passwordController.text.trim(),
-  //     // );
-
-  //     // User? user = userCredential.user;
-
-  //     // if (user != null && !user.emailVerified) {
-  //     //   Get.log("[STEP 2] Sending verification email...");
-  //     //   await user.sendEmailVerification();
-  //     //   isloding.value = false;
-
-  //     //   Get.defaultDialog(
-  //     //     barrierDismissible: false,
-  //     //     backgroundColor: AppColors.whiteColor,
-  //     //     title: "Verify Your Email",
-  //     //     titleStyle: AppTextStyles.adaptiveText(Get.context!, 20).copyWith(
-  //     //       color: AppColors.primaryColor,
-  //     //       fontWeight: FontWeight.bold,
-  //     //     ),
-  //     //     middleTextStyle:
-  //     //         AppTextStyles.adaptiveText(Get.context!, 16).copyWith(
-  //     //       color: AppColors.blackColor,
-  //     //     ),
-  //     //     middleText:
-  //     //         "A verification link has been sent to ${user.email}. Please verify and then press the button below.",
-  //     //     confirm: ElevatedButton(
-  //     //       style: ElevatedButton.styleFrom(
-  //     //         backgroundColor: AppColors.accentColor,
-  //     //         shape: RoundedRectangleBorder(
-  //     //           borderRadius: BorderRadius.circular(12),
-  //     //         ),
-  //     //       ),
-  //     //       onPressed: () async {
-  //     //         try {
-  //     //           isloding.value = true;
-
-  //     //           Get.log("[STEP 3] Checking email verification status...");
-  //     //           Fluttertoast.showToast(
-  //     //               msg: "Checking email verification status...");
-
-  //     //           bool isVerified = false;
-  //     //           int retryCount = 0;
-
-  //     //           while (retryCount < 3 && !isVerified) {
-  //     //             await Future.delayed(Duration(seconds: 2));
-  //     //             await user.reload();
-  //     //             isVerified =
-  //     //                 FirebaseAuth.instance.currentUser?.emailVerified ?? false;
-  //     //             retryCount++;
-  //     //           }
-
-  //     //           if (isVerified) {
-  //     //             Get.log(
-  //     //                 "[STEP 4] Email verified! Creating Firestore data...");
-  //     //             Fluttertoast.showToast(
-  //     //                 msg: "Email verified! Creating Firestore data...");
-
-  //     //             String deviceId = await getDeviceId();
-
-  //                 // await firestore.collection('users').doc(user.uid).set({
-  //                 //   'email': user.email,
-  //                 //   'userId': user.uid,
-  //                 //   'username': nameController.text.trim(),
-  //                 //   'password': passwordController.text.trim(),
-  //                 //   'depositAmount': '0',
-  //                 //   'withdrawAmount': '0',
-  //                 //   'reward': '0',
-  //                 //   'deviceId': deviceId,
-  //                 //   'cashVault': '0',
-  //                 //   "isUserBanned": false,
-  //                 //   'refferredBy': refferalCodeController.text.isEmpty
-  //                 //       ? ""
-  //                 //       : refferalCodeController.text,
-  //                 //   'refferralProfit': '0',
-  //                 //   'createdAt': FieldValue.serverTimestamp(),
-  //                 //   'image': ''
-  //                 // }).then((_) {
-  //                 //   Fluttertoast.showToast(msg: 'Account created successfully');
-  //                 //   Get.offAllNamed(AppRoutes.login);
-  //                 //   clearTextFields();
-  //                 // }).catchError((error) {
-  //                 //   Get.log("[ERROR] Firestore save failed: $error");
-  //                 //   MessageToast.showToast(msg: 'Error saving user data');
-  //                 // });
-  //     //           } else {
-  //     //             Get.log("[INFO] Email not verified. Deleting user...");
-
-  //     //             await user.delete(); // 🧨 Delete the unverified account
-
-  //     //             Fluttertoast.showToast(
-  //     //                 msg: "Email not verified. Account has been removed.");
-  //     //             Get.back(); // Close dialog
-  //     //           }
-  //     //         } catch (e) {
-  //     //           Get.log("[ERROR] While checking verification: $e");
-  //     //           Fluttertoast.showToast(msg: "Error verifying email");
-  //     //         } finally {
-  //     //           isloding.value = false;
-  //     //         }
-  //     //       },
-  //     //       child: Obx(
-  //     //         () => isloding.value
-  //     //             ? Padding(
-  //     //                 padding: const EdgeInsets.all(8.0),
-  //     //                 child: CircularProgressIndicator(
-  //     //                   color: AppColors.whiteColor,
-  //     //                 ),
-  //     //               )
-  //     //             : Text("I have verified",
-  //     //                 style:
-  //     //                     AppTextStyles.adaptiveText(Get.context!, 16).copyWith(
-  //     //                   color: AppColors.whiteColor,
-  //     //                   fontWeight: FontWeight.bold,
-  //     //                 )),
-  //     //       ),
-  //     //     ),
-  //     //   );
-
-  //     //   isloding.value = false;
-  //     // }
-  //   } on FirebaseAuthException catch (e) {
-  //     isloding.value = false;
-  //     if (e.code == 'email-already-in-use') {
-  //       MessageToast.showToast(msg: 'Email already in use');
-  //     } else if (e.code == 'weak-password') {
-  //       MessageToast.showToast(msg: 'Password is too weak');
-  //     } else if (e.code == 'invalid-email') {
-  //       MessageToast.showToast(msg: 'Invalid email address');
-  //     } else {
-  //       MessageToast.showToast(msg: 'Something went wrong: ${e.message}');
-  //     }
-  //   } catch (e) {
-  //     isloding.value = false;
-  //     MessageToast.showToast(msg: 'Something went wrong: $e');
-  //   }
-  // }
+ 
 
   Future<void> signUpUser() async {
     isloding.value = true;
