@@ -58,7 +58,22 @@ class LoginController extends GetxController {
     isLoading.value = true;
 
     try {
+      if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+        showToast('Email and password cannot be empty', isError: true);
+        return;
+      }
+      if (!emailController.text.isEmail) {
+        showToast('Invalid email format', isError: true);
+        return;
+      }
+      if (passwordController.text.length < 6) {
+        showToast('Password must be at least 6 characters', isError: true);
+        return;
+      }
+
+
       // Step 1: Get current device ID
+      showToast("Fetching device ID...");
       final currentDeviceId = await getDeviceId();
       if (currentDeviceId.isEmpty) {
         showToast('Device ID retrieval failed', isError: true);
