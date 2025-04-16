@@ -166,26 +166,26 @@ https://leasurenft.io
     isloding.value = true;
     try {
       showToast("Creating User...");
-      if (!await canCreateAccount()) {
-        isloding.value = false;
-        GetPlatform.isWeb
-            ? Fluttertoast.showToast(
-                msg: "You cannot create more than 2 accounts from this device",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.BOTTOM,
-                backgroundColor: AppColors.errorColor,
-                textColor: AppColors.whiteColor,
-              )
-            : Get.snackbar(
-                "Account Creation Error",
-                "You cannot create more than 2 accounts from this device",
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(seconds: 2),
-                backgroundColor: AppColors.errorColor,
-                colorText: AppColors.whiteColor,
-              );
-        return;
-      }
+      // if (!await canCreateAccount()) {
+      //   isloding.value = false;
+      //   GetPlatform.isWeb
+      //       ? Fluttertoast.showToast(
+      //           msg: "You cannot create more than 2 accounts from this device",
+      //           toastLength: Toast.LENGTH_SHORT,
+      //           gravity: ToastGravity.BOTTOM,
+      //           backgroundColor: AppColors.errorColor,
+      //           textColor: AppColors.whiteColor,
+      //         )
+      //       : Get.snackbar(
+      //           "Account Creation Error",
+      //           "You cannot create more than 2 accounts from this device",
+      //           snackPosition: SnackPosition.BOTTOM,
+      //           duration: const Duration(seconds: 2),
+      //           backgroundColor: AppColors.errorColor,
+      //           colorText: AppColors.whiteColor,
+      //         );
+      //   return;
+      // }
       showToast("Creating account...");
       final otp = generateOTP();
 
