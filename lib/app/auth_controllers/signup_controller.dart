@@ -9,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:leasure_nft/app/core/app_colors.dart';
+import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/routes/app_routes.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
@@ -159,11 +160,10 @@ https://leasurenft.io
     }
   }
 
- 
-
   Future<void> signUpUser() async {
     isloding.value = true;
     try {
+      showToast("Creating User...");
       if (!await canCreateAccount()) {
         isloding.value = false;
         GetPlatform.isWeb
@@ -184,6 +184,7 @@ https://leasurenft.io
               );
         return;
       }
+      showToast("Creating account...");
       final otp = generateOTP();
 
       // Send OTP
