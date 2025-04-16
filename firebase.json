@@ -1,0 +1,49 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "leasure-nft-88aaf",
+          "appId": "1:241461826546:android:3ddfbba77b70059045516b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "leasure-nft-88aaf",
+          "appId": "1:241461826546:ios:05623d890756f9e345516b",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "leasure-nft-88aaf",
+          "appId": "1:241461826546:ios:05623d890756f9e345516b",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "leasure-nft-88aaf",
+          "configurations": {
+            "android": "1:241461826546:android:3ddfbba77b70059045516b",
+            "ios": "1:241461826546:ios:05623d890756f9e345516b",
+            "macos": "1:241461826546:ios:05623d890756f9e345516b",
+            "web": "1:241461826546:web:6abb076a201b972845516b",
+            "windows": "1:241461826546:web:fec2d81e40996b9945516b"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
