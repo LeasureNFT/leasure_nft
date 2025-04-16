@@ -71,6 +71,8 @@ class LoginController extends GetxController {
         email: email,
         password: password,
       );
+       showToast('User authenticated successfully');
+
 
       final user = userCredential.user;
       if (user == null) {
