@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -19,29 +18,29 @@ class LoginController extends GetxController {
     obscurePassword.value = !obscurePassword.value;
   }
 
-  Future<String> getDeviceId() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    String deviceId;
+  // Future<String> getDeviceId() async {
+  //   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+  //   String deviceId;
 
-    if (GetPlatform.isAndroid) {
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      deviceId = androidInfo.id;
-      Get.log("[DEBUG] Android Device ID: $deviceId");
-    } else if (GetPlatform.isIOS) {
-      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
-      Get.log("[DEBUG] iOS Device ID: $deviceId");
-    } else if (GetPlatform.isWeb) {
-      WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
-      deviceId = webInfo.userAgent ?? 'unknown_web_device';
-      Get.log("[DEBUG] Web Device ID: $deviceId");
-    } else {
-      deviceId = 'unknown_device';
-      Get.log("[DEBUG] Fallback Device ID: $deviceId");
-    }
+  //   if (GetPlatform.isAndroid) {
+  //     AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+  //     deviceId = androidInfo.id;
+  //     Get.log("[DEBUG] Android Device ID: $deviceId");
+  //   } else if (GetPlatform.isIOS) {
+  //     IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+  //     deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
+  //     Get.log("[DEBUG] iOS Device ID: $deviceId");
+  //   } else if (GetPlatform.isWeb) {
+  //     WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
+  //     deviceId = webInfo.userAgent ?? 'unknown_web_device';
+  //     Get.log("[DEBUG] Web Device ID: $deviceId");
+  //   } else {
+  //     deviceId = 'unknown_device';
+  //     Get.log("[DEBUG] Fallback Device ID: $deviceId");
+  //   }
 
-    return deviceId;
-  }
+  //   return deviceId;
+  // }
 
   void clearControllers() {
     emailController.clear();
@@ -54,11 +53,11 @@ class LoginController extends GetxController {
     try {
       // Step 1: Get current device ID
       showToast("Fetching device ID...");
-      final currentDeviceId = await getDeviceId();
-      if (currentDeviceId.isEmpty) {
-        showToast('Device ID retrieval failed', isError: true);
-        return;
-      }
+      // final currentDeviceId = await getDeviceId();
+      // if (currentDeviceId.isEmpty) {
+      //   showToast('Device ID retrieval failed', isError: true);
+      //   return;
+      // }
 
       // Step 2: Authenticate user
       final email = emailController.text.trim();
@@ -100,7 +99,7 @@ class LoginController extends GetxController {
 
       final data = userDoc.data();
       final isBanned = data?['isUserBanned'] ?? false;
-      final storedDeviceId = data?['deviceId'];
+      // final storedDeviceId = data?['deviceId'];
 
       // Step 5: Banned user check
       if (isBanned) {
@@ -112,19 +111,19 @@ class LoginController extends GetxController {
       }
 
       // Step 6: Device restriction logic
-      if (storedDeviceId == null) {
-        // Save current device ID if not already set
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({'deviceId': currentDeviceId});
-      } else if (storedDeviceId != currentDeviceId) {
-        showToast(
-          'Your account is already logged in on another device.',
-          isError: true,
-        );
-        return;
-      }
+      // if (storedDeviceId == null) {
+      //   // Save current device ID if not already set
+      //   await FirebaseFirestore.instance
+      //       .collection('users')
+      //       .doc(user.uid)
+      //       .update({'deviceId': currentDeviceId});
+      // } else if (storedDeviceId != currentDeviceId) {
+      //   showToast(
+      //     'Your account is already logged in on another device.',
+      //     isError: true,
+      //   );
+      //   return;
+      // }
 
       // Step 7: Login successful
       showToast('Login successful');
