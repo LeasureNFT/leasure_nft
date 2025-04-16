@@ -46,36 +46,38 @@ class SignupController extends GetxController {
   }
 
   Future<String> getDeviceId() async {
-    String deviceId = 'unknown_device';
+  String deviceId = 'unknown_device';
 
-    if (kIsWeb) {
-      // SAFELY read deviceId from localStorage and handle type errors
-      final stored = html.window.localStorage['deviceId'];
-      if (stored is String && stored.isNotEmpty) {
-        deviceId = stored;
-        Get.log("[DEBUG] Existing Web Device ID: $deviceId");
-      } else {
-        deviceId = const Uuid().v4();
-        html.window.localStorage['deviceId'] = deviceId;
-        Get.log("[DEBUG] New Web Device ID: $deviceId");
-      }
+  if (kIsWeb) {
+    final stored = html.window.localStorage['deviceId'];
+    if (stored is String && stored.isNotEmpty) {
+      deviceId = stored;
+      Get.log("[DEBUG] Existing Web Device ID: $deviceId");
     } else {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      if (GetPlatform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-        deviceId = androidInfo.id;
-      } else if (GetPlatform.isIOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
-      } else {
-        deviceId = 'unsupported_platform';
-      }
-      Get.log("[DEBUG] Native Device ID: $deviceId");
-    }
+      // Fallback using userAgent hash
+      final userAgent = html.window.navigator.userAgent;
+      final userHash = userAgent.hashCode.toString();
 
-    return deviceId;
+      deviceId = "web_${const Uuid().v5(Uuid.NAMESPACE_URL, userHash)}";
+      html.window.localStorage['deviceId'] = deviceId;
+      Get.log("[DEBUG] Generated fallback Web Device ID: $deviceId");
+    }
+  } else {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    if (GetPlatform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      deviceId = androidInfo.id;
+    } else if (GetPlatform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
+    } else {
+      deviceId = 'unsupported_platform';
+    }
+    Get.log("[DEBUG] Native Device ID: $deviceId");
   }
 
+  return deviceId;
+}
   void getReferralFromCookie() {
     if (kIsWeb) {
       final cookies = html.document.cookie?.split('; ') ?? [];
