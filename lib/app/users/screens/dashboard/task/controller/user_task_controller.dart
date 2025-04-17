@@ -12,6 +12,7 @@ class UserTaskController extends GetxController {
   final descriptionController = TextEditingController();
   final urlController = TextEditingController();
   final taskList = <Map<String, dynamic>>[].obs;
+
   var currentDay = DateTime.now().day; // Track current day
   var completedTasks = <bool>[].obs;
   var errorMessage = ''.obs;
@@ -42,7 +43,7 @@ class UserTaskController extends GetxController {
 
       // Clear the saved 'completedTasks' from local storage (empty list for the new day)
       box.remove('completedTasks');
-
+      box.remove("cashValue");
       // Save the updated 'completedTasks' list (as an empty list or initialized state)
       box.write('completedTasks', completedTasks.value);
 
@@ -198,9 +199,15 @@ class UserTaskController extends GetxController {
 
       // Step 5: Calculate profit ONLY if referral profit is greater than 0
       double profit = 0.0;
+      var existingCashValue = box.read("cashValue");
+      if (existingCashValue == null) {
+        box.write("cashValue", cashValue);
+        existingCashValue = box.read("cashValue");
+      }
       if (refferrelProfit >= 0) {
-        profit = cashValue * 0.02; // 2% of cashVault
-        cashValue += cashValue * 0.02;
+        profit = existingCashValue * 0.005; // 2% of cashVault
+
+        cashValue += existingCashValue * 0.005;
         refferrelProfit += profit;
 
         errorMessage.value = 'Updating cashVault and referral profit...';
@@ -335,19 +342,6 @@ class UserTaskController extends GetxController {
         {'subtask': 'Complete a governance analysis quiz'},
         {'subtask': 'Research political movements'},
         {'subtask': 'Analyze global political trends'},
-      ],
-    },
-    {
-      'task': 'Personal Growth & Development',
-      'description':
-          'Focus on personal growth and self-improvement strategies.',
-      'subtasks': [
-        {'subtask': 'Read a personal growth script'},
-        {'subtask': 'Watch a motivational speech video'},
-        {'subtask': 'Complete a self-assessment quiz'},
-        {'subtask': 'Research habits of successful people'},
-        {'subtask': 'Develop a personal growth action plan'},
-        {'subtask': 'Write a reflection on self-improvement'},
       ],
     },
   ];

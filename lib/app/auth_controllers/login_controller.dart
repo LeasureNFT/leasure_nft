@@ -213,11 +213,11 @@ class LoginController extends GetxController {
     try {
       // Step 1: Get current device ID
       
-      final currentDeviceId = await getDeviceId();
-      if (currentDeviceId.isEmpty) {
-        showToast('Device ID retrieval failed', isError: true);
-        return;
-      }
+      // final currentDeviceId = await getDeviceId();
+      // if (currentDeviceId.isEmpty) {
+      //   showToast('Device ID retrieval failed', isError: true);
+      //   return;
+      // }
 
       // Step 2: Validate input
       final email = emailController.text.trim();
@@ -258,7 +258,7 @@ class LoginController extends GetxController {
 
       final data = userDoc.data();
       final isBanned = data?['isUserBanned'] ?? false;
-      final storedDeviceId = data?['deviceId'];
+      // final storedDeviceId = data?['deviceId'];
 
       // Step 6: Banned user check
       if (isBanned) {
@@ -270,19 +270,19 @@ class LoginController extends GetxController {
       }
 
       // Step 7: Device restriction
-      if (storedDeviceId == null) {
-        await firestore
-            .collection('users')
-            .doc(user.uid)
-            .update({'deviceId': currentDeviceId});
-        Get.log('[DEBUG] Device ID saved to Firestore: $currentDeviceId');
-      } else if (storedDeviceId != currentDeviceId) {
-        showToast(
-          'Your account is already logged in on another device.',
-          isError: true,
-        );
-        return;
-      }
+      // if (storedDeviceId == null) {
+      //   await firestore
+      //       .collection('users')
+      //       .doc(user.uid)
+      //       .update({'deviceId': currentDeviceId});
+      //   Get.log('[DEBUG] Device ID saved to Firestore: $currentDeviceId');
+      // } else if (storedDeviceId != currentDeviceId) {
+      //   showToast(
+      //     'Your account is already logged in on another device.',
+      //     isError: true,
+      //   );
+      //   return;
+      // }
 
       // Step 8: Login success
       showToast('Login successful');
