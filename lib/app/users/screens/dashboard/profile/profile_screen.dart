@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
@@ -161,6 +162,9 @@ class UserProfileScreen extends GetView<ProfileController> {
                                     Navigator.of(context)
                                         .pop(); // Close the dialog
                                     await FirebaseAuth.instance.signOut();
+                                    final box = GetStorage();
+                                    await box.remove('completedTasks');
+                                    await box.remove("cashValue");
                                     Get.offAll(() => UserLoginScreen());
                                   },
                                 ),
