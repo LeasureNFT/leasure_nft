@@ -35,7 +35,14 @@ class VarificationScreen extends GetView<VerificationController> {
                   height: 30.h,
                 ),
                 Text(
-                    "A verification code has been sent to . Please enter the code from your email address.",
+                    "A verification code has been sent to ${controller.email}. Please enter the code from your email address.",
+                    style: AppTextStyles.adaptiveText(context, 16).copyWith(
+                        color: AppColors.blackColor,
+                        fontWeight: FontWeight.normal)),
+                SizedBox(
+                  height: 20.h,
+                ),
+                Text(" Your Otp is ${controller.otp}",
                     style: AppTextStyles.adaptiveText(context, 16).copyWith(
                         color: AppColors.blackColor,
                         fontWeight: FontWeight.normal)),
@@ -81,25 +88,25 @@ class VarificationScreen extends GetView<VerificationController> {
                 SizedBox(
                   height: 15.h,
                 ),
-                InkWell(
-                  onTap: () async {
-                    await controller.resend();
-                  },
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Didn\'t receive code? ',
-                          style: AppTextStyles.adaptiveText(context, 14)
-                              .copyWith(fontWeight: FontWeight.w500)),
-                      Text('Resend',
-                          style: AppTextStyles.adaptiveText(context, 15)
-                              .copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.primaryColor)),
-                    ],
-                  ),
-                ),
+                // InkWell(
+                //   onTap: () async {
+                //     await controller.resend();
+                //   },
+                //   child: Row(
+                //     crossAxisAlignment: CrossAxisAlignment.center,
+                //     mainAxisAlignment: MainAxisAlignment.center,
+                //     children: [
+                //       Text('Didn\'t receive code? ',
+                //           style: AppTextStyles.adaptiveText(context, 14)
+                //               .copyWith(fontWeight: FontWeight.w500)),
+                //       Text('Resend',
+                //           style: AppTextStyles.adaptiveText(context, 15)
+                //               .copyWith(
+                //                   fontWeight: FontWeight.w500,
+                //                   color: AppColors.primaryColor)),
+                //     ],
+                //   ),
+                // ),
               ],
             ),
           ),

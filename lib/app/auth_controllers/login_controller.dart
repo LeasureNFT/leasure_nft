@@ -145,7 +145,7 @@
 //     }
 //   }
 // }
-import 'dart:html' as html; // For web localStorage
+ // For web localStorage
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -154,7 +154,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
-
+import 'package:universal_html/html.dart' as html;
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/data/app_prefernces.dart';
 import 'package:leasure_nft/app/routes/app_routes.dart';
@@ -212,7 +212,7 @@ class LoginController extends GetxController {
 
     try {
       // Step 1: Get current device ID
-      showToast("Fetching device ID...");
+      
       final currentDeviceId = await getDeviceId();
       if (currentDeviceId.isEmpty) {
         showToast('Device ID retrieval failed', isError: true);
@@ -233,7 +233,7 @@ class LoginController extends GetxController {
         password: password,
       );
 
-      showToast('User authenticated successfully');
+      
 
       final user = userCredential.user;
       if (user == null) {

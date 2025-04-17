@@ -18,7 +18,7 @@ class VerificationController extends GetxController {
   final GetStorage storage = GetStorage();
   final isLoading = false.obs;
 
-  late String email, password, name;
+  var email, password, name, otp;
   String? referralCode, deviceId;
 
   @override
@@ -32,13 +32,15 @@ class VerificationController extends GetxController {
         referralCode = args['refferalCode'];
         deviceId = args['deviceId'];
         name = args['name'];
+        verificationController.text = args['otp'];
+
         Get.log(
             "[DEBUG] VerificationController initialized with email: $email, password: $password, referralCode: $referralCode, deviceId: $deviceId, name: $name");
       }
     });
   }
 
-String generateOTP({int length = 6}) {
+  String generateOTP({int length = 6}) {
     final random = Random();
     return List.generate(length, (_) => random.nextInt(10)).join();
   }
@@ -90,6 +92,7 @@ https://leasurenft.io
       Get.log('Stacktrace: $stacktrace');
     }
   }
+
   void showToast(String message, {bool isError = false}) {
     if (GetPlatform.isWeb) {
       Fluttertoast.showToast(
@@ -111,10 +114,7 @@ https://leasurenft.io
     }
   }
 
-
-Future<void>resend() async {
-    
-
+  Future<void> resend() async {
     try {
       final otp = generateOTP();
       await sendOTPEmail(email, otp);
@@ -123,14 +123,14 @@ Future<void>resend() async {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      
       showToast('Verification code sent to $email');
     } on FirebaseException catch (e) {
       showToast(e.message ?? 'Failed to send OTP', isError: true);
     } catch (e) {
       showToast('Unexpected error occurred: $e', isError: true);
-    } 
+    }
   }
+
   Future<void> verifyEmail() async {
     isLoading.value = true;
 
@@ -161,10 +161,10 @@ Future<void>resend() async {
               'depositAmount': '0',
               'withdrawAmount': '0',
               'reward': '0',
-              'deviceId': deviceId,
+              'deviceId': deviceId.toString(),
               'cashVault': '0',
               "isUserBanned": false,
-              'refferredBy': referralCode,
+              'refferredBy': referralCode.toString(),
               'refferralProfit': '0',
               'createdAt': FieldValue.serverTimestamp(),
               'image': ''

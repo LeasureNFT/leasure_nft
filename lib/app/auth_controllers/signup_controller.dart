@@ -12,7 +12,7 @@ import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/routes/app_routes.dart';
 import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server/gmail.dart';
+import 'package:mailer/smtp_server.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:uuid/uuid.dart';
 
@@ -77,15 +77,35 @@ class SignupController extends GetxController {
   }
 
   void getReferralFromCookie() {
-    if (kIsWeb) {
-      final cookies = html.document.cookie?.split('; ') ?? [];
-      for (var cookie in cookies) {
-        final parts = cookie.split('=');
-        if (parts.length == 2 && parts[0] == 'ref') {
-          refferalCodeController.text = parts[1];
-          break;
+    try {
+      if (kIsWeb) {
+        final rawCookies = html.document.cookie;
+        if (rawCookies == null || rawCookies.isEmpty) {
+          Get.log("[INFO] No cookies found.");
+          return;
         }
+
+        final cookies = rawCookies.split('; ');
+        for (var cookie in cookies) {
+          final parts = cookie.split('=');
+          if (parts.length == 2) {
+            final key = parts[0].trim();
+            final value = parts[1].trim();
+            if (key == 'ref') {
+              refferalCodeController.text = value;
+              Get.log("[DEBUG] Referral code found in cookie: $value");
+              return;
+            }
+          }
+        }
+
+        Get.log("[INFO] 'ref' cookie not found.");
+      } else {
+        Get.log("[INFO] Not running on Web. Skipping cookie check.");
       }
+    } catch (e, stackTrace) {
+      Get.log("[ERROR] Failed to get referral from cookie: $e");
+      Get.log("[STACKTRACE] $stackTrace");
     }
   }
 
@@ -126,58 +146,98 @@ class SignupController extends GetxController {
     return List.generate(length, (_) => random.nextInt(10)).join();
   }
 
-  Future<void> sendOTPEmail(String email, String otp) async {
-    final smtpServer = gmail(
-      'leasurenft.suport@gmail.com',
-      'idyf wzxy yvso bhvx', // App password
-    );
+//   Future<void> sendOTPEmail(String email, String otp) async {
+//     final smtpServer = gmail(
+//       'leasurenft.suport@gmail.com',
+//       'idyf wzxy yvso bhvx', // App password
+//     );
 
-    final message = Message()
-      ..from = Address('leasurenft.suport@gmail.com', 'LeasureNFT Support')
-      ..recipients.add(email)
-      ..subject = 'Confirm your email for LeasureNFT'
-      ..text = '''
-Hi there,
+//     final message = Message()
+//       ..from = Address('leasurenft.suport@gmail.com', 'LeasureNFT Support')
+//       ..recipients.add(email)
+//       ..subject = 'Confirm your email for LeasureNFT'
+//       ..text = '''
+// Hi there,
 
-Thanks for signing up with LeasureNFT!
+// Thanks for signing up with LeasureNFT!
 
-Your verification code is: $otp
+// Your verification code is: $otp
 
-Please do not share this code with anyone.
+// Please do not share this code with anyone.
 
-Cheers,  
-LeasureNFT Team
-https://leasurenft.io
-'''
-      ..html = '''
-<p>Hi there,</p>
-<p>Thanks for signing up with <strong>LeasureNFT</strong>!</p>
-<p>Your verification code is:</p>
-<h2 style="color:#4CAF50;">$otp</h2>
-<p>Please do not share this code with anyone.</p>
-<p>Cheers,<br><strong>LeasureNFT Team</strong><br><a href="https://leasurenft.io">leasurenft.io</a></p>
-''';
+// Cheers,
+// LeasureNFT Team
+// https://leasurenft.io
+// '''
+//       ..html = '''
+// <p>Hi there,</p>
+// <p>Thanks for signing up with <strong>LeasureNFT</strong>!</p>
+// <p>Your verification code is:</p>
+// <h2 style="color:#4CAF50;">$otp</h2>
+// <p>Please do not share this code with anyone.</p>
+// <p>Cheers,<br><strong>LeasureNFT Team</strong><br><a href="https://leasurenft.io">leasurenft.io</a></p>
+// ''';
 
-    try {
-      final sendReport = await send(message, smtpServer);
-      Get.log('✅ Email sent successfully: ${sendReport.toString()}');
-    } on MailerException catch (e) {
-      Get.log('❌ MailerException: Failed to send email.');
-      for (var p in e.problems) {
-        Get.log('Problem: ${p.code} - ${p.msg}');
-      }
-    } on ArgumentError catch (e) {
-      Get.log('❌ ArgumentError: ${e.message}');
-    } catch (e, stacktrace) {
-      Get.log('❌ Unexpected error: $e');
-      Get.log('Stacktrace: $stacktrace');
+//     try {
+//       final sendReport = await send(message, smtpServer);
+//       Get.log('✅ Email sent successfully: ${sendReport.toString()}');
+//     } on MailerException catch (e) {
+//       Get.log('❌ MailerException: Failed to send email.');
+//       for (var p in e.problems) {
+//         Get.log('Problem: ${p.code} - ${p.msg}');
+//       }
+//     } on ArgumentError catch (e) {
+//       Get.log('❌ ArgumentError: ${e.message}');
+//     } catch (e, stacktrace) {
+//       Get.log('❌ Unexpected error: $e');
+//       Get.log('Stacktrace: $stacktrace');
+//     }
+//   }
+  Future<bool> sendOTPEmail(String email, String otp) async {
+  final smtpServer =  SmtpServer(
+    '144.126.143.170', // Direct IP as SMTP host
+    port: 25, // Port 25 is usually used for SMTP
+    ssl: false, // Port 25 doesn't use SSL usually
+    username: 'admin@livinservices.com',
+    password: 'livinservices',
+  );
+
+  final message = Message()
+    ..from = Address('admin@livinservices.com', 'LeasureNFT Support') // Must match verified sender
+    ..recipients.add(email)
+    ..subject = 'Confirm your email for LeasureNFT'
+    ..text = 'Your OTP is: $otp'
+    ..html = '''
+      <p>Hi there,</p>
+      <p>Thanks for signing up with <strong>LeasureNFT</strong>!</p>
+      <p>Your verification code is:</p>
+      <h2 style="color:#4CAF50;">$otp</h2>
+      <p>Please do not share this code with anyone.</p>
+      <p>Cheers,<br><strong>LeasureNFT Team</strong><br><a href="https://leasurenft.io">leasurenft.io</a></p>
+    ''';
+
+  try {
+    final sendReport = await send(message, smtpServer);
+    Get.log('✅ Email sent: ${sendReport.toString()}');
+    return true;
+  } on MailerException catch (e) {
+    Get.log('❌ MailerException:');
+    for (var p in e.problems) {
+      Get.log('Problem: ${p.code} - ${p.msg}');
     }
+    return false;
+  } catch (e, stacktrace) {
+    Get.log('❌ Error: $e');
+    Get.log('Stacktrace: $stacktrace');
+    return false;
   }
+}
+
 
   Future<void> signUpUser() async {
     isloding.value = true;
     try {
-      showToast("Creating User...");
+      
       if (!await canCreateAccount()) {
         isloding.value = false;
         GetPlatform.isWeb
@@ -198,14 +258,19 @@ https://leasurenft.io
               );
         return;
       }
-      showToast("Creating account...");
+  
       final otp = generateOTP();
-      showToast("Sending OTP... $otp");
+      
 
       // Send OTP
-      await sendOTPEmail(emailController.text, otp);
-      Get.log("[STEP 1] Sending OTP email...");
+      // final isOTPSent = await sendOTPEmail(emailController.text, otp);
+      // Get.log("[STEP 1] Sending OTP email...");
 
+      // if (!isOTPSent) {
+      //   showToast("Failed to send OTP. Please try again." , isError: true) ;
+      //   return; // Stop the flow, don’t go to next screen
+      // }
+showToast("Sending OTP... $otp");
       // Save OTP temporarily
       await FirebaseFirestore.instance
           .collection('email_otps')
@@ -238,6 +303,7 @@ https://leasurenft.io
             ? ""
             : refferalCodeController.text,
         'deviceId': await getDeviceId(),
+        "otp": otp,
         'password': passwordController.text,
       });
     } catch (e) {
