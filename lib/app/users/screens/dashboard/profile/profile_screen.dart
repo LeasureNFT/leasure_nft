@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:intl/intl.dart';
 import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
@@ -159,13 +160,32 @@ class UserProfileScreen extends GetView<ProfileController> {
                                   negativeButtonText: 'NO',
                                   positiveButtonText: 'YES',
                                   onPositiveButtonPressed: () async {
-                                    Navigator.of(context)
-                                        .pop(); // Close the dialog
-                                    await FirebaseAuth.instance.signOut();
                                     final box = GetStorage();
-                                    await box.remove('completedTasks');
-                                    await box.remove("cashValue");
+
+                                    // Close the dialog
+                                    final user =
+                                        FirebaseAuth.instance.currentUser;
+                                    if (user == null) return;
+
+                                    String uid = user.uid;
+                                    String? lastResetDate =
+                                        box.read<String>('lastResetDate');
+                                    String currentDate =
+                                        DateFormat('yyyy-MM-dd')
+                                            .format(DateTime.now());
+
+                                    if (lastResetDate == null ||
+                                        lastResetDate != currentDate) {
+                                      // Clear the saved 'completedTasks' from local storage (empty list for the new day)
+                                      box.remove('completedTasks_$uid');
+                                      box.remove("cashValue");
+                                      // Save the updated 'completedTasks' list (as an empty list or initialized state)
+
+                                      // Store the new date to track the last reset
+                                    }
+                                    await FirebaseAuth.instance.signOut();
                                     Get.offAll(() => UserLoginScreen());
+                                    Get.back();
                                   },
                                 ),
                               );

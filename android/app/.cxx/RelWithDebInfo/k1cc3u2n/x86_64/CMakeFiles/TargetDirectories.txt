@@ -1,0 +1,2 @@
+/Users/mac/Documents/flutter projects/Personal/leasure_nft/android/app/.cxx/RelWithDebInfo/k1cc3u2n/x86_64/CMakeFiles/edit_cache.dir
+/Users/mac/Documents/flutter projects/Personal/leasure_nft/android/app/.cxx/RelWithDebInfo/k1cc3u2n/x86_64/CMakeFiles/rebuild_cache.dir

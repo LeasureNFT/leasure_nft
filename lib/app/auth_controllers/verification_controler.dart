@@ -18,8 +18,13 @@ class VerificationController extends GetxController {
   final GetStorage storage = GetStorage();
   final isLoading = false.obs;
 
-  var email, password, name, otp;
-  String? referralCode, deviceId;
+  var email = "".obs;
+  var password = "".obs;
+  var name = "".obs;
+  var otp = "".obs;
+  var referralCode = "".obs;
+  var deviceId = "".obs;
+  
 
   @override
   void onInit() {
@@ -27,11 +32,11 @@ class VerificationController extends GetxController {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = Get.arguments;
       if (args != null) {
-        email = args['email'];
-        password = args['password'];
-        referralCode = args['refferalCode'];
-        deviceId = args['deviceId'];
-        name = args['name'];
+        email.value = args['email'];
+        password.value = args['password'];
+        referralCode.value = args['refferalCode'];
+        deviceId.value = args['deviceId'];
+        name.value = args['name'];
         verificationController.text = args['otp'];
 
         Get.log(
@@ -117,8 +122,8 @@ https://leasurenft.io
   Future<void> resend() async {
     try {
       final otp = generateOTP();
-      await sendOTPEmail(email, otp);
-      await firestore.collection('email_otps').doc(email).set({
+      await sendOTPEmail(email.value, otp);
+      await firestore.collection('email_otps').doc(email.value).set({
         'otp': otp,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -135,7 +140,7 @@ https://leasurenft.io
     isLoading.value = true;
 
     try {
-      final doc = await firestore.collection('email_otps').doc(email).get();
+      final doc = await firestore.collection('email_otps').doc(email.value).get();
       Get.log("[DEBUG] Document data: \${doc.data()}");
 
       if (!doc.exists || doc.data() == null) {
@@ -147,8 +152,8 @@ https://leasurenft.io
 
         if (storedOtp == enteredOtp) {
           final userCredential = await auth.createUserWithEmailAndPassword(
-            email: email,
-            password: password,
+            email: email.value,
+            password: password.value,
           );
 
           final user = userCredential.user;
@@ -156,15 +161,15 @@ https://leasurenft.io
             await firestore.collection('users').doc(user.uid).set({
               'email': user.email,
               'userId': user.uid,
-              'username': name,
-              'password': password,
+              'username': name.value,
+              'password': password.value,
               'depositAmount': '0',
               'withdrawAmount': '0',
               'reward': '0',
-              'deviceId': deviceId.toString(),
+              'deviceId': deviceId.value.toString(),
               'cashVault': '0',
               "isUserBanned": false,
-              'refferredBy': referralCode.toString(),
+              'refferredBy': referralCode.value.toString(),
               'refferralProfit': '0',
               'createdAt': FieldValue.serverTimestamp(),
               'image': ''

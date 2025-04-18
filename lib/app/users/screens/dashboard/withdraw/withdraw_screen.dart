@@ -43,7 +43,7 @@ class WithdrawalScreen extends GetView<UserWithdrawController> {
 
                     Obx(
                       () => Text(
-                        'Balance : ${controller.cashVault.value}',
+                        'Balance : ${controller.cashVault.value.toStringAsFixed(4)}',
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w600,
                           fontSize: 18.sp,

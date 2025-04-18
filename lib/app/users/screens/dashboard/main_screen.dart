@@ -158,7 +158,7 @@ class UserMainScreen extends GetView<UserDashboardController> {
                                               SizedBox(height: 10.h),
                                               Obx(
                                                 () => Text(
-                                                    'Rs ${controller.userModel.value?.cashVault ?? 0}',
+                                                    'Rs ${controller.userModel.value?.cashVault!.toStringAsFixed(4) ?? 0}',
                                                     style: AppTextStyles
                                                             .adaptiveText(
                                                                 context,
@@ -220,9 +220,8 @@ class UserMainScreen extends GetView<UserDashboardController> {
                                                                   text:
                                                                       'https://leasure-nft-88aaf.web.app/?ref=${controller.userModel.value!.userId ?? ""}'))
                                                           .then((_) {
-                                                      showToast(
-                                                           
-                                                                "Link copied to clipboard");
+                                                        showToast(
+                                                            "Link copied to clipboard");
                                                       });
                                                     },
                                                     icon: Icon(
@@ -310,7 +309,7 @@ class UserMainScreen extends GetView<UserDashboardController> {
                                     context: context,
                                     text1: "Referral Earn",
                                     text2:
-                                        "Rs ${controller.refferralProfit.value}",
+                                        "Rs ${controller.refferralProfit.value.toStringAsFixed(2)}",
                                     ontap: () {}),
                               ),
                               SizedBox(height: 10.h),

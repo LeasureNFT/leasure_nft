@@ -34,18 +34,22 @@ class VarificationScreen extends GetView<VerificationController> {
                 SizedBox(
                   height: 30.h,
                 ),
-                Text(
-                    "A verification code has been sent to ${controller.email}. Please enter the code from your email address.",
-                    style: AppTextStyles.adaptiveText(context, 16).copyWith(
-                        color: AppColors.blackColor,
-                        fontWeight: FontWeight.normal)),
+                Obx(
+                  () => Text(
+                      "A verification code has been sent to ${controller.email.value}. Please enter the code from your email address.",
+                      style: AppTextStyles.adaptiveText(context, 16).copyWith(
+                          color: AppColors.blackColor,
+                          fontWeight: FontWeight.normal)),
+                ),
                 SizedBox(
                   height: 20.h,
                 ),
-                Text(" Your Otp is ${controller.otp}",
-                    style: AppTextStyles.adaptiveText(context, 16).copyWith(
-                        color: AppColors.blackColor,
-                        fontWeight: FontWeight.normal)),
+                Obx(
+                  () => Text(" Your Otp is ${controller.otp.value}",
+                      style: AppTextStyles.adaptiveText(context, 16).copyWith(
+                          color: AppColors.blackColor,
+                          fontWeight: FontWeight.normal)),
+                ),
                 SizedBox(
                   height: 20.h,
                 ),

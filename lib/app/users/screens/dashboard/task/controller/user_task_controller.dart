@@ -33,28 +33,36 @@ class UserTaskController extends GetxController {
   }
 
   Future<void> checkAndResetTasks() async {
-    // Get the stored date of the last reset
-    String? lastResetDate = box.read<String>('lastResetDate');
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String uid = user.uid;
+    final box = GetStorage();
     String currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
+    String? lastResetDate = box.read<String>('lastResetDate');
+
     if (lastResetDate == null || lastResetDate != currentDate) {
-      // If it's a new day, reset the completedTasks list
+      // New day, reset the tasks
       completedTasks.value = List.generate(taskList.length, (index) => false);
 
-      // Clear the saved 'completedTasks' from local storage (empty list for the new day)
-      box.remove('completedTasks');
-      box.remove("cashValue");
-      // Save the updated 'completedTasks' list (as an empty list or initialized state)
-      box.write('completedTasks', completedTasks.value);
+      box.remove('completedTasks_$uid');
+      box.remove('cashValue');
 
-      // Store the new date to track the last reset
+      box.write('completedTasks_$uid', completedTasks.value);
+      box.write('cashValue', 0);
       box.write('lastResetDate', currentDate);
     }
   }
 
   Future<void> loadCompletedTasks() async {
+    final box = GetStorage();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String uid = user.uid;
     // Load the saved completedTasks list from GetStorage
-    var savedTasks = box.read('completedTasks');
+    var savedTasks = box.read('completedTasks_$uid');
 
     if (savedTasks != null && savedTasks is List) {
       // Ensure the saved list is a List<bool>
@@ -63,8 +71,13 @@ class UserTaskController extends GetxController {
   }
 
   void saveCompletedTasks() {
-    // Save the completedTasks list in GetStorage
-    box.write('completedTasks', completedTasks.value);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final box = GetStorage();
+    String uid = user.uid;
+
+    box.write('completedTasks_$uid', completedTasks.value);
   }
 
   void updateRating(double newRating) {
