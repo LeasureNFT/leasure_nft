@@ -6,6 +6,7 @@ import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
 import 'package:leasure_nft/app/users/screens/network/controller/network_controller.dart';
+import 'package:leasure_nft/app/users/screens/records/user_deposit_records.dart';
 
 class NetworkScreen extends GetView<NetworkController> {
   const NetworkScreen({super.key});
@@ -26,29 +27,100 @@ class NetworkScreen extends GetView<NetworkController> {
                           Get.back();
                         }),
                     SizedBox(
+                      height: 15.h,
+                    ),
+                    Obx(
+                      () => Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 10.w, vertical: 10.h),
+                        decoration: BoxDecoration(
+                          color: AppColors.blackColor200,
+                          borderRadius: BorderRadius.circular(15.r),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            swapButton(
+                              buttonColor: controller.currentTab.value == 0
+                                  ? AppColors.accentColor
+                                  : AppColors.transparentColor,
+                              context: context,
+                              ontap: () {
+                                controller.changeTab(0);
+                              },
+                              text: "Level 1",
+                              textColor: controller.currentTab.value == 0
+                                  ? AppColors.whiteColor
+                                  : AppColors.blackColor,
+                            ),
+                            swapButton(
+                              buttonColor: controller.currentTab.value == 1
+                                  ? AppColors.accentColor
+                                  : AppColors.transparentColor,
+                              context: context,
+                              ontap: () {
+                                controller.changeTab(1);
+                              },
+                              text: "Level 2",
+                              textColor: controller.currentTab.value == 1
+                                  ? AppColors.whiteColor
+                                  : AppColors.blackColor,
+                            ),
+                            swapButton(
+                              buttonColor: controller.currentTab.value == 2
+                                  ? AppColors.accentColor
+                                  : AppColors.transparentColor,
+                              context: context,
+                              ontap: () {
+                                controller.changeTab(2);
+                              },
+                              text: "Level 3",
+                              textColor: controller.currentTab.value == 2
+                                  ? AppColors.whiteColor
+                                  : AppColors.blackColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(
                       height: 20.h,
                     ),
                     Expanded(
-                      child: Obx(() {
-                        if (controller.isloading.value) {
-                          return Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        } else if (controller.referralTree.isEmpty) {
-                          return Center(child: Text("No referrals yet"));
-                        } else {
-                          return SingleChildScrollView(
-                            child: TreeView(
-                              treeController: controller.treeController,
-                              indent: 20.0,
-                              iconSize: 25,
-                              nodes: _buildTreeNodes(
-                                  controller.referralTree, context),
-                            ),
-                          );
-                        }
-                      }),
-                    ),
+  child: Obx(() {
+    if (controller.isloading.value) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    List<Map<String, dynamic>> currentList = [];
+    if (controller.currentTab.value == 0) {
+      currentList = controller.level1;
+    } else if (controller.currentTab.value == 1) {
+      currentList = controller.level2;
+    } else if (controller.currentTab.value == 2) {
+      currentList = controller.level3;
+    }
+
+    if (currentList.isEmpty) {
+      return Center(child: Text("No users found in this level"));
+    }
+
+    return ListView.builder(
+      itemCount: currentList.length,
+      itemBuilder: (context, index) {
+        final user = currentList[index];
+        return Card(
+          margin: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: ListTile(
+            leading: Icon(Icons.person),
+            title: Text(user["name"]),
+            subtitle: Text("UID: ${user["id"]}"),
+          ),
+        );
+      },
+    );
+  }),
+)
                   ],
                 ),
               ),

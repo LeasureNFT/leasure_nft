@@ -31,11 +31,11 @@ class SignUpScreen extends GetView<SignupController> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(
-                          height: 30.h,
+                          height: 20.h,
                         ),
                         Center(
                           child: SizedBox(
-                            height: 200.h,
+                            height: 180.h,
                             child: Image.asset(AppImages.logo),
                           ),
                         ),
@@ -50,7 +50,7 @@ class SignUpScreen extends GetView<SignupController> {
                         Text('Let\'s get started',
                             style: AppTextStyles.adaptiveText(context, 18)
                                 .copyWith(fontWeight: FontWeight.w500)),
-                        SizedBox(height: 25.h),
+                        SizedBox(height: 20.h),
 
                         if (controller
                             .refferalCodeController.text.isNotEmpty) ...[
@@ -78,8 +78,8 @@ class SignUpScreen extends GetView<SignupController> {
                           prefixIcon: Icons.person,
                           keyboardType: TextInputType.name,
                         ),
-                        SizedBox(height: 10.h),
 
+                        SizedBox(height: 10.h),
                         CustomTextField(
                           title: 'Email',
                           validator: (v) {

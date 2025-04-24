@@ -9,12 +9,18 @@ class NetworkController extends GetxController {
       <Map<String, dynamic>>[].obs; // Store referrals as list of maps
   String? userId;
   final isloading = false.obs;
-  late TreeController treeController;
-
+  final level1 = <Map<String, dynamic>>[].obs;
+final level2 = <Map<String, dynamic>>[].obs;
+final level3 = <Map<String, dynamic>>[].obs;
+  
+final currentTab = 0.obs;
+  void changeTab(int index) {
+    currentTab.value = index;
+  }
   @override
   void onInit() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      treeController = TreeController(allNodesExpanded: false);
+     
       isloading.value = true;
       userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId != null) {
@@ -24,6 +30,55 @@ class NetworkController extends GetxController {
     });
     super.onInit();
   }
+  Future<void> fetchReferrals(String userId) async {
+  try {
+    level1.clear();
+    level2.clear();
+    level3.clear();
+
+    QuerySnapshot level1Snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where('refferredBy', isEqualTo: userId)
+        .get();
+
+    for (var doc1 in level1Snap.docs) {
+      final user1 = {
+        "id": doc1.id,
+        "name": doc1["username"] ?? "Unknown",
+      };
+      level1.add(user1);
+
+      QuerySnapshot level2Snap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('refferredBy', isEqualTo: doc1.id)
+          .get();
+
+      for (var doc2 in level2Snap.docs) {
+        final user2 = {
+          "id": doc2.id,
+          "name": doc2["username"] ?? "Unknown",
+        };
+        level2.add(user2);
+
+        QuerySnapshot level3Snap = await FirebaseFirestore.instance
+            .collection('users')
+            .where('refferredBy', isEqualTo: doc2.id)
+            .get();
+
+        for (var doc3 in level3Snap.docs) {
+          final user3 = {
+            "id": doc3.id,
+            "name": doc3["username"] ?? "Unknown",
+          };
+          level3.add(user3);
+        }
+      }
+    }
+  } catch (e) {
+    print("Error: $e");
+  }
+}
+
 
   Future<List<Map<String, dynamic>>> getReferralNodes(String userId) async {
     isloading.value = true;
@@ -47,12 +102,5 @@ class NetworkController extends GetxController {
     return nodes;
   }
 
-  Future<void> fetchReferrals(String userId) async {
-    try {
-      List<Map<String, dynamic>> nodes = await getReferralNodes(userId);
-      referralTree.value = nodes;
-    } catch (e) {
-      print("❌ Error fetching referrals: $e");
-    }
-  }
+ 
 }

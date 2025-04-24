@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,8 +7,6 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/routes/app_routes.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server/gmail.dart';
 
 class VerificationController extends GetxController {
   final verificationController = TextEditingController();
@@ -18,13 +15,13 @@ class VerificationController extends GetxController {
   final GetStorage storage = GetStorage();
   final isLoading = false.obs;
 
+  RxBool isResending = false.obs;
   var email = "".obs;
   var password = "".obs;
   var name = "".obs;
   var otp = "".obs;
   var referralCode = "".obs;
   var deviceId = "".obs;
-  
 
   @override
   void onInit() {
@@ -37,65 +34,11 @@ class VerificationController extends GetxController {
         referralCode.value = args['refferalCode'];
         deviceId.value = args['deviceId'];
         name.value = args['name'];
-        verificationController.text = args['otp'];
 
-        Get.log(
-            "[DEBUG] VerificationController initialized with email: $email, password: $password, referralCode: $referralCode, deviceId: $deviceId, name: $name");
+         // Retrieve OTP verification ID
+        Get.log("[DEBUG] VerificationController initialized with email: $email, name: $name, deviceId: $deviceId");
       }
     });
-  }
-
-  String generateOTP({int length = 6}) {
-    final random = Random();
-    return List.generate(length, (_) => random.nextInt(10)).join();
-  }
-
-  Future<void> sendOTPEmail(String email, String otp) async {
-    final smtpServer = gmail(
-      'leasurenft.suport@gmail.com',
-      'idyf wzxy yvso bhvx', // App password
-    );
-
-    final message = Message()
-      ..from = Address('leasurenft.suport@gmail.com', 'LeasureNFT Support')
-      ..recipients.add(email)
-      ..subject = 'Confirm your email for LeasureNFT'
-      ..text = '''
-Hi there,
-
-Thanks for signing up with LeasureNFT!
-
-Your verification code is: $otp
-
-Please do not share this code with anyone.
-
-Cheers,  
-LeasureNFT Team
-https://leasurenft.io
-'''
-      ..html = '''
-<p>Hi there,</p>
-<p>Thanks for signing up with <strong>LeasureNFT</strong>!</p>
-<p>Your verification code is:</p>
-<h2 style="color:#4CAF50;">$otp</h2>
-<p>Please do not share this code with anyone.</p>
-<p>Cheers,<br><strong>LeasureNFT Team</strong><br><a href="https://leasurenft.io">leasurenft.io</a></p>
-''';
-
-    try {
-      final sendReport = await send(message, smtpServer);
-      Get.log('✅ Email sent successfully: ${sendReport.toString()}');
-    } on MailerException catch (e) {
-      Get.log('❌ MailerException: Failed to send email.');
-      for (var p in e.problems) {
-        Get.log('Problem: ${p.code} - ${p.msg}');
-      }
-    } on ArgumentError catch (e) {
-      Get.log('❌ ArgumentError: ${e.message}');
-    } catch (e, stacktrace) {
-      Get.log('❌ Unexpected error: $e');
-      Get.log('Stacktrace: $stacktrace');
-    }
   }
 
   void showToast(String message, {bool isError = false}) {
@@ -119,79 +62,84 @@ https://leasurenft.io
     }
   }
 
-  Future<void> resend() async {
-    try {
-      final otp = generateOTP();
-      await sendOTPEmail(email.value, otp);
-      await firestore.collection('email_otps').doc(email.value).set({
-        'otp': otp,
+  // Resend OTP
+  // Future<void> resendOTP(String phoneNumber) async {
+  //   isResending.value = true;
+  //   try {
+  //     await FirebaseAuth.instance.verifyPhoneNumber(
+  //       phoneNumber: phoneNumber,
+  //       forceResendingToken: resendToken,
+  //       verificationCompleted: (PhoneAuthCredential credential) {},
+  //       verificationFailed: (FirebaseAuthException e) {
+  //         Fluttertoast.showToast(
+  //           msg: "Resend failed: ${e.message}",
+  //           backgroundColor: AppColors.errorColor,
+  //         );
+  //       },
+  //       codeSent: (String newVerificationId, int? newResendToken) {
+  //         verificationId = newVerificationId;
+  //         resendToken = newResendToken;
+  //         Fluttertoast.showToast(
+  //           msg: "OTP resent to $phoneNumber",
+  //           backgroundColor: AppColors.greenColor,
+  //         );
+  //       },
+  //       codeAutoRetrievalTimeout: (String verificationId) {},
+  //     );
+  //   } catch (e) {
+  //     Fluttertoast.showToast(msg: "Error: $e");
+  //   } finally {
+  //     isResending.value = false;
+  //   }
+  // }
+
+  // Verify OTP and create the user account
+ Future<void> verifyEmailAndCreateAccount() async {
+  isLoading.value = true;
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      showToast("No user found. Please sign up first.", isError: true);
+      return;
+    }
+
+    // Reload user to get the latest verification status
+    await user.reload();
+    final refreshedUser = FirebaseAuth.instance.currentUser;
+
+    if (refreshedUser != null && refreshedUser.emailVerified) {
+      // Email is verified – Save user data to Firestore
+      await firestore.collection('users').doc(refreshedUser.uid).set({
+        'email': email.value,
+        'userId': refreshedUser.uid,
+        'username': name.value,
+        'password': password.value,
+        'deviceId': deviceId.value,
+        'referredBy': referralCode.value,
         'createdAt': FieldValue.serverTimestamp(),
+        'isUserBanned': false,
+        'cashVault': '0',
+        'depositAmount': '0',
+        'withdrawAmount': '0',
+        'reward': '0',
+        'refferralProfit': '0',
+        'image': '',
       });
 
-      showToast('Verification code sent to $email');
-    } on FirebaseException catch (e) {
-      showToast(e.message ?? 'Failed to send OTP', isError: true);
-    } catch (e) {
-      showToast('Unexpected error occurred: $e', isError: true);
+      showToast('Account verified & created successfully!');
+      Get.offAllNamed(AppRoutes.login);
+    } else {
+      // Email not verified – Delete unverified user
+      await refreshedUser?.delete();
+      showToast("Email not verified. Account has been deleted.", isError: true);
+      Get.offAllNamed(AppRoutes.signUp);
     }
+  } catch (e) {
+    showToast('Error verifying email: $e', isError: true);
+  } finally {
+    isLoading.value = false;
   }
+}
 
-  Future<void> verifyEmail() async {
-    isLoading.value = true;
-
-    try {
-      final doc = await firestore.collection('email_otps').doc(email.value).get();
-      Get.log("[DEBUG] Document data: \${doc.data()}");
-
-      if (!doc.exists || doc.data() == null) {
-        showToast('No verification code found for this email', isError: true);
-      } else {
-        final storedOtp = doc['otp'];
-        final enteredOtp = verificationController.text.trim();
-        Get.log("[DEBUG] Stored OTP: $storedOtp, Entered OTP: $enteredOtp");
-
-        if (storedOtp == enteredOtp) {
-          final userCredential = await auth.createUserWithEmailAndPassword(
-            email: email.value,
-            password: password.value,
-          );
-
-          final user = userCredential.user;
-          if (user != null) {
-            await firestore.collection('users').doc(user.uid).set({
-              'email': user.email,
-              'userId': user.uid,
-              'username': name.value,
-              'password': password.value,
-              'depositAmount': '0',
-              'withdrawAmount': '0',
-              'reward': '0',
-              'deviceId': deviceId.value.toString(),
-              'cashVault': '0',
-              "isUserBanned": false,
-              'refferredBy': referralCode.value.toString(),
-              'refferralProfit': '0',
-              'createdAt': FieldValue.serverTimestamp(),
-              'image': ''
-            });
-
-            showToast('Account created successfully');
-            Get.offAllNamed(AppRoutes.login);
-          } else {
-            throw Exception("User creation failed");
-          }
-        } else {
-          showToast('Invalid verification code', isError: true);
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      showToast(e.message ?? 'Authentication error', isError: true);
-    } on FirebaseException catch (e) {
-      showToast(e.message ?? 'Firestore error', isError: true);
-    } catch (e) {
-      showToast('Unexpected error occurred: \$e', isError: true);
-    } finally {
-      isLoading.value = false;
-    }
-  }
 }

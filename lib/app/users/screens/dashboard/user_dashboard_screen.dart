@@ -9,6 +9,7 @@ import 'package:leasure_nft/app/users/screens/dashboard/main_screen.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/profile/profile_screen.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/task/user_task_screen.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/withdraw/withdraw_screen.dart';
+import 'package:leasure_nft/app/users/screens/network/network_screen.dart';
 
 class UserDashboardScreen extends GetView<UserDashboardController> {
   UserDashboardScreen({super.key});
@@ -38,6 +39,8 @@ class UserDashboardScreen extends GetView<UserDashboardController> {
                   return WithdrawalScreen();
                 case DashboardTab.profile:
                   return UserProfileScreen();
+                case DashboardTab.network:
+                  return NetworkScreen();
               }
             },
           ),
@@ -131,6 +134,8 @@ class UserDashboardScreen extends GetView<UserDashboardController> {
         return Icons.account_balance_wallet_outlined;
       case DashboardTab.profile:
         return Icons.person_3_outlined;
+      case DashboardTab.network:
+        return Icons.network_check_outlined;
     }
   }
 }

@@ -9,6 +9,7 @@ import 'package:leasure_nft/app/users/screens/records/user_task_records.dart';
 import 'package:leasure_nft/app/users/screens/records/user_withdraw_records.dart';
 
 class RecordScreen extends GetView {
+  const RecordScreen({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(

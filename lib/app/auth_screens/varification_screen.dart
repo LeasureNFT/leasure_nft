@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,6 +9,7 @@ import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/custom_button.dart';
 import 'package:leasure_nft/app/core/widgets/custom_text_field.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
+import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 
 class VarificationScreen extends GetView<VerificationController> {
   final formKey = GlobalKey<FormState>();
@@ -28,15 +30,30 @@ class VarificationScreen extends GetView<VerificationController> {
               children: [
                 Header(
                     title: "Email Verification",
-                    ontap: () {
-                      Get.back();
+                    ontap: () async {
+                      final user = FirebaseAuth.instance.currentUser;
+
+                      if (user != null) {
+                        await user.reload(); // Refresh user's latest state
+
+                        if (!user.emailVerified) {
+                          // Email is not verified — delete user
+                          await user.delete();
+                          showToast("Email not verified. Account deleted.",
+                              isError: true);
+                        } else {
+                          showToast("Email verified successfully!");
+                        }
+                      }
+
+                      Get.back(); // Go back either way
                     }),
                 SizedBox(
                   height: 30.h,
                 ),
                 Obx(
                   () => Text(
-                      "A verification code has been sent to ${controller.email.value}. Please enter the code from your email address.",
+                      "A verification link has been sent to ${controller.email.value}. Please go to  email address and verify your account.",
                       style: AppTextStyles.adaptiveText(context, 16).copyWith(
                           color: AppColors.blackColor,
                           fontWeight: FontWeight.normal)),
@@ -82,9 +99,7 @@ class VarificationScreen extends GetView<VerificationController> {
                   () => CustomButton(
                     loading: controller.isLoading.value,
                     onPressed: () {
-                      if (formKey.currentState!.validate()) {
-                        controller.verifyEmail();
-                      }
+                      controller.verifyEmailAndCreateAccount();
                     },
                     text: "Verify",
                   ),

@@ -292,16 +292,7 @@ class UserMainScreen extends GetView<UserDashboardController> {
                                     ontap: () {}),
                               ),
                               SizedBox(height: 10.h),
-                              Obx(
-                                () => _card(
-                                    iconPath: Icons.group_sharp,
-                                    context: context,
-                                    text1: "Total Refferal",
-                                    text2: "${controller.totalRefferral.value}",
-                                    ontap: () {
-                                      Get.to(() => NetworkScreen());
-                                    }),
-                              ),
+                              
                               SizedBox(height: 10.h),
                               Obx(
                                 () => _card(
