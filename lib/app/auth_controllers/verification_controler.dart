@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -35,8 +34,9 @@ class VerificationController extends GetxController {
         deviceId.value = args['deviceId'];
         name.value = args['name'];
 
-         // Retrieve OTP verification ID
-        Get.log("[DEBUG] VerificationController initialized with email: $email, name: $name, deviceId: $deviceId");
+        // Retrieve OTP verification ID
+        Get.log(
+            "[DEBUG] VerificationController initialized with email: $email, name: $name, deviceId: $deviceId");
       }
     });
   }
@@ -94,52 +94,51 @@ class VerificationController extends GetxController {
   // }
 
   // Verify OTP and create the user account
- Future<void> verifyEmailAndCreateAccount() async {
-  isLoading.value = true;
-  try {
-    final user = FirebaseAuth.instance.currentUser;
+  Future<void> verifyEmailAndCreateAccount() async {
+    isLoading.value = true;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      showToast("No user found. Please sign up first.", isError: true);
-      return;
+      if (user == null) {
+        showToast("No user found. Please sign up first.", isError: true);
+        return;
+      }
+
+      // Reload user to get the latest verification status
+      await user.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+
+      if (refreshedUser != null && refreshedUser.emailVerified) {
+        // Email is verified – Save user data to Firestore
+        await firestore.collection('users').doc(refreshedUser.uid).set({
+          'email': email.value,
+          'userId': refreshedUser.uid,
+          'username': name.value,
+          'password': password.value,
+          'deviceId': deviceId.value,
+          'referredBy': referralCode.value,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isUserBanned': false,
+          'cashVault': '0',
+          'depositAmount': '0',
+          'withdrawAmount': '0',
+          'reward': '0',
+          'refferralProfit': '0',
+          'image': '',
+        });
+
+        showToast('Account verified & created successfully!');
+        Get.offAllNamed(AppRoutes.login);
+      } else {
+        // Email not verified – Delete unverified user
+        await refreshedUser?.delete();
+        showToast("Email not verified. Please go back and sigun with original emmail", isError: true);
+        Get.offAllNamed(AppRoutes.signUp);
+      }
+    } catch (e) {
+      showToast('Error verifying email: $e', isError: true);
+    } finally {
+      isLoading.value = false;
     }
-
-    // Reload user to get the latest verification status
-    await user.reload();
-    final refreshedUser = FirebaseAuth.instance.currentUser;
-
-    if (refreshedUser != null && refreshedUser.emailVerified) {
-      // Email is verified – Save user data to Firestore
-      await firestore.collection('users').doc(refreshedUser.uid).set({
-        'email': email.value,
-        'userId': refreshedUser.uid,
-        'username': name.value,
-        'password': password.value,
-        'deviceId': deviceId.value,
-        'referredBy': referralCode.value,
-        'createdAt': FieldValue.serverTimestamp(),
-        'isUserBanned': false,
-        'cashVault': '0',
-        'depositAmount': '0',
-        'withdrawAmount': '0',
-        'reward': '0',
-        'refferralProfit': '0',
-        'image': '',
-      });
-
-      showToast('Account verified & created successfully!');
-      Get.offAllNamed(AppRoutes.login);
-    } else {
-      // Email not verified – Delete unverified user
-      await refreshedUser?.delete();
-      showToast("Email not verified. Account has been deleted.", isError: true);
-      Get.offAllNamed(AppRoutes.signUp);
-    }
-  } catch (e) {
-    showToast('Error verifying email: $e', isError: true);
-  } finally {
-    isLoading.value = false;
   }
-}
-
 }

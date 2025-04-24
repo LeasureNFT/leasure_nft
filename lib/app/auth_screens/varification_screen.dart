@@ -1,13 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:leasure_nft/app/auth_controllers/verification_controler.dart';
 import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/custom_button.dart';
-import 'package:leasure_nft/app/core/widgets/custom_text_field.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 
@@ -39,7 +37,7 @@ class VarificationScreen extends GetView<VerificationController> {
                         if (!user.emailVerified) {
                           // Email is not verified — delete user
                           await user.delete();
-                          showToast("Email not verified. Account deleted.",
+                          showToast("Email not verified.",
                               isError: true);
                         } else {
                           showToast("Email verified successfully!");
@@ -51,46 +49,39 @@ class VarificationScreen extends GetView<VerificationController> {
                 SizedBox(
                   height: 30.h,
                 ),
-                Obx(
-                  () => Text(
-                      "A verification link has been sent to ${controller.email.value}. Please go to  email address and verify your account.",
-                      style: AppTextStyles.adaptiveText(context, 16).copyWith(
-                          color: AppColors.blackColor,
-                          fontWeight: FontWeight.normal)),
-                ),
-                SizedBox(
-                  height: 20.h,
-                ),
-                Obx(
-                  () => Text(" Your Otp is ${controller.otp.value}",
-                      style: AppTextStyles.adaptiveText(context, 16).copyWith(
-                          color: AppColors.blackColor,
-                          fontWeight: FontWeight.normal)),
-                ),
-                SizedBox(
-                  height: 20.h,
-                ),
-                CustomTextField(
-                    controller: controller.verificationController,
-                    title: "Verification Code",
-                    keyboardType: TextInputType.number,
-                    inputFormatter: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(6),
-                    ],
-                    hintText: "Enter Otp",
-                    validator: (p0) {
-                      if (p0!.isEmpty) {
-                        return "Please enter your verification code";
-                      } else if (p0.length < 6) {
-                        return "Please enter a valid verification code";
-                      }
 
-                      return null;
-                    },
-                    prefixIcon: Icons.pin_outlined),
                 SizedBox(
                   height: 20.h,
+                ),
+                Obx(
+                  () => Text.rich(
+                    TextSpan(
+                      text: "A verification link has been sent to ",
+                      style: AppTextStyles.adaptiveText(context, 16).copyWith(
+                        color: AppColors.blackColor,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      children: <TextSpan>[
+                        TextSpan(
+                          text: controller.email.value,
+                          style:
+                              AppTextStyles.adaptiveText(context, 18).copyWith(
+                            color: AppColors.primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextSpan(
+                          text:
+                              ". Please go to the email address and verify your account.",
+                          style:
+                              AppTextStyles.adaptiveText(context, 16).copyWith(
+                            color: AppColors.blackColor,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 SizedBox(
                   height: 20.h,

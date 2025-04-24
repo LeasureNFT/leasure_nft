@@ -8,7 +8,6 @@ import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/users/contollers/user_main_controller.dart';
-import 'package:leasure_nft/app/users/screens/network/network_screen.dart';
 import 'package:leasure_nft/app/users/screens/records/record_screen.dart';
 
 class UserMainScreen extends GetView<UserDashboardController> {

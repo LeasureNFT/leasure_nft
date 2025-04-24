@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:leasure_nft/app/users/models/user_model.dart';
 
-enum DashboardTab { deposit, task, home, withdraw, profile , network }
+enum DashboardTab { home, deposit, task, withdraw, network, profile }
 
 class UserDashboardController extends GetxController {
   Rx<UserModel?> userModel = Rx<UserModel?>(null); // 🔥 Reactive UserModel

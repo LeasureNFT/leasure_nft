@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_simple_treeview/flutter_simple_treeview.dart';
 import 'package:get/get.dart';
 import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
+import 'package:leasure_nft/app/users/contollers/user_main_controller.dart';
 import 'package:leasure_nft/app/users/screens/network/controller/network_controller.dart';
 import 'package:leasure_nft/app/users/screens/records/user_deposit_records.dart';
 
@@ -24,8 +24,34 @@ class NetworkScreen extends GetView<NetworkController> {
                     Header(
                         title: "Network",
                         ontap: () {
-                          Get.back();
+                          final controller1 =
+                              Get.find<UserDashboardController>();
+                          controller1.changePage(DashboardTab.home.index);
                         }),
+                    SizedBox(
+                      height: 15.h,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Total Profit",
+                          style: AppTextStyles.adaptiveText(context, 17)
+                              .copyWith(
+                                  fontWeight: FontWeight.normal,
+                                  color: AppColors.blackColor),
+                        ),
+                        Obx(
+                          () => Text(
+                            "${controller.totalProfit.value.toStringAsFixed(2)} PKR",
+                            style: AppTextStyles.adaptiveText(context, 17)
+                                .copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.blackColor),
+                          ),
+                        ),
+                      ],
+                    ),
                     SizedBox(
                       height: 15.h,
                     ),
@@ -87,40 +113,170 @@ class NetworkScreen extends GetView<NetworkController> {
                       height: 20.h,
                     ),
                     Expanded(
-  child: Obx(() {
-    if (controller.isloading.value) {
-      return Center(child: CircularProgressIndicator());
-    }
+                      child: Obx(() {
+                        if (controller.isloading.value) {
+                          return Center(child: CircularProgressIndicator());
+                        }
 
-    List<Map<String, dynamic>> currentList = [];
-    if (controller.currentTab.value == 0) {
-      currentList = controller.level1;
-    } else if (controller.currentTab.value == 1) {
-      currentList = controller.level2;
-    } else if (controller.currentTab.value == 2) {
-      currentList = controller.level3;
-    }
+                        List<Map<String, dynamic>> currentList = [];
+                        if (controller.currentTab.value == 0) {
+                          currentList = controller.level1;
+                        } else if (controller.currentTab.value == 1) {
+                          currentList = controller.level2;
+                        } else if (controller.currentTab.value == 2) {
+                          currentList = controller.level3;
+                        }
 
-    if (currentList.isEmpty) {
-      return Center(child: Text("No users found in this level"));
-    }
+                        if (currentList.isEmpty) {
+                          return Center(
+                              child: Text("No users found in this level"));
+                        }
 
-    return ListView.builder(
-      itemCount: currentList.length,
-      itemBuilder: (context, index) {
-        final user = currentList[index];
-        return Card(
-          margin: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          child: ListTile(
-            leading: Icon(Icons.person),
-            title: Text(user["name"]),
-            subtitle: Text("UID: ${user["id"]}"),
-          ),
-        );
-      },
-    );
-  }),
-)
+                        return Column(
+                          children: [
+                            controller.currentTab.value == 0
+                                ? Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Total Level 1 Profit",
+                                        style: AppTextStyles.adaptiveText(
+                                                context, 17)
+                                            .copyWith(
+                                                fontWeight: FontWeight.normal,
+                                                color: AppColors.blackColor),
+                                      ),
+                                      Obx(
+                                        () => Text(
+                                          "${controller.level1Profit.value.toStringAsFixed(2)} PKR",
+                                          style: AppTextStyles.adaptiveText(
+                                                  context, 17)
+                                              .copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.blackColor),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : controller.currentTab.value == 1
+                                    ? Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            "Total Level 2 Profit",
+                                            style: AppTextStyles.adaptiveText(
+                                                    context, 17)
+                                                .copyWith(
+                                                    fontWeight:
+                                                        FontWeight.normal,
+                                                    color:
+                                                        AppColors.blackColor),
+                                          ),
+                                          Obx(
+                                            () => Text(
+                                              "${controller.level2Profit.value.toStringAsFixed(2)} PKR",
+                                              style: AppTextStyles.adaptiveText(
+                                                      context, 17)
+                                                  .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          AppColors.blackColor),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : controller.currentTab.value == 2
+                                        ? Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                "Total Level 3 Profit",
+                                                style:
+                                                    AppTextStyles.adaptiveText(
+                                                            context, 17)
+                                                        .copyWith(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .normal,
+                                                            color: AppColors
+                                                                .blackColor),
+                                              ),
+                                              Obx(
+                                                () => Text(
+                                                  "${controller.level3Profit.value.toStringAsFixed(2)} PKR",
+                                                  style: AppTextStyles
+                                                          .adaptiveText(
+                                                              context, 17)
+                                                      .copyWith(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: AppColors
+                                                              .blackColor),
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : SizedBox(),
+                            SizedBox(
+                              height: 10.h,
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: currentList.length,
+                                itemBuilder: (context, index) {
+                                  final user = currentList[index];
+                                  return Card(
+                                    margin: EdgeInsets.symmetric(
+                                        vertical: 6, horizontal: 4),
+                                    child: ListTile(
+                                      leading: Icon(Icons.person,
+                                          size: 30,
+                                          color: AppColors.accentColor),
+                                      title: Text(
+                                        user["name"],
+                                        style: AppTextStyles.adaptiveText(
+                                                context, 16)
+                                            .copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.primaryColor),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Email:  ${user["email"]}",
+                                            style: AppTextStyles.adaptiveText(
+                                                    context, 14)
+                                                .copyWith(
+                                                    fontWeight: FontWeight.w400,
+                                                    color:
+                                                        AppColors.blackColor),
+                                          ),
+                                          Text(
+                                            "Total Profit:  ${user["totalProfit"]} PKR",
+                                            style: AppTextStyles.adaptiveText(
+                                                    context, 14)
+                                                .copyWith(
+                                                    fontWeight: FontWeight.w400,
+                                                    color:
+                                                        AppColors.blackColor),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    )
                   ],
                 ),
               ),
@@ -130,36 +286,4 @@ class NetworkScreen extends GetView<NetworkController> {
   }
 
   /// Recursively build tree nodes
-  List<TreeNode> _buildTreeNodes(
-      List<Map<String, dynamic>> referrals, context) {
-    return referrals.map((referral) {
-      return TreeNode(
-        content: Container(
-          padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.accentColor),
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
-                spreadRadius: 2,
-                blurRadius: 5,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.person, color: AppColors.primaryColor),
-              SizedBox(width: 10),
-              Text(referral["name"],
-                  style: AppTextStyles.adaptiveText(context, 15)),
-            ],
-          ),
-        ),
-        children: _buildTreeNodes(referral["children"], context),
-      );
-    }).toList();
-  }
 }
