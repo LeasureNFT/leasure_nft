@@ -147,25 +147,39 @@ class SignupController extends GetxController {
       }
 
       // Create user with email and password
-      final UserCredential userCredential = await FirebaseAuth.instance
+       await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
               email: emailController.text.trim(),
               password: passwordController.text.trim());
 
-      // Send email verification
-      await userCredential.user?.sendEmailVerification();
 
-      // Navigate to the verification screen
-      Get.toNamed(AppRoutes.varification, arguments: {
-        'email': emailController.text.trim(),
-        'name': nameController.text.trim(),
-        'refferalCode': refferalCodeController.text.isEmpty
-            ? ""
-            : refferalCodeController.text,
-        'deviceId': await getDeviceId(),
-        "password": passwordController.text.trim(),
-        'uid': userCredential.user?.uid,
-      });
+      // Send email verification
+      
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+
+
+      
+        // Email is verified – Save user data to Firestore
+        await firestore.collection('users').doc(refreshedUser!.uid).set({
+          'email': emailController.text.trim(),
+          'userId': refreshedUser.uid,
+          'username': nameController.text.trim(),
+          'password': passwordController.text.trim(),
+          'deviceId': await getDeviceId(),
+          'referredBy': refferalCodeController.text.trim(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'isUserBanned': false,
+          'cashVault': '0',
+          'depositAmount': '0',
+          'withdrawAmount': '0',
+          'reward': '0',
+          'refferralProfit': '0',
+          'image': '',
+        });
+
+        showToast('Account verified & created successfully!');
+        Get.offAllNamed(AppRoutes.login);
+    
     } on FirebaseAuthException catch (e) {
       showToast("Signup failed: ${e.message}", isError: true);
       Get.log("[ERROR] Firebase Auth Exception: ${e.message}");
