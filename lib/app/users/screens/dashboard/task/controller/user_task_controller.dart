@@ -210,10 +210,11 @@ class UserTaskController extends GetxController {
       errorMessage.value =
           'Calculating profit... Please wait'; // Show loading message;
 
+      Get.log("$cashValue $refferrelProfit");
       // Step 5: Calculate profit ONLY if referral profit is greater than 0
       double profit = 0.0;
       var existingCashValue = box.read("cashValue");
-      if (existingCashValue == null) {
+      if (existingCashValue == null || existingCashValue == 0) {
         box.write("cashValue", cashValue);
         existingCashValue = box.read("cashValue");
       }

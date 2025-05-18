@@ -26,7 +26,7 @@ class UserTaskScreen extends GetView<UserTaskController> {
                 Header(
                   title: "Daily Task",
                   ontap: () {
-                    final controller1 = Get.find<UserDashboardController>();
+                    final controller1 = Get.put(UserDashboardController());
                     controller1.changePage(DashboardTab.home.index);
                     // controller1.pageController
                     //     .jumpToPage(DashboardTab.home.index);

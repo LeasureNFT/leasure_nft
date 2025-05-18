@@ -37,8 +37,7 @@ class UserProfileScreen extends GetView<ProfileController> {
                     Header(
                         title: "Profile",
                         ontap: () {
-                          final controller1 =
-                              Get.find<UserDashboardController>();
+                          final controller1 = Get.put(UserDashboardController());
                           controller1.changePage(DashboardTab.home.index);
                         }),
                     SizedBox(
@@ -160,7 +159,7 @@ class UserProfileScreen extends GetView<ProfileController> {
                                   negativeButtonText: 'NO',
                                   positiveButtonText: 'YES',
                                   onPositiveButtonPressed: () async {
-                                    final box = GetStorage();
+                                    final box =  GetStorage();
 
                                     // Close the dialog
                                     final user =

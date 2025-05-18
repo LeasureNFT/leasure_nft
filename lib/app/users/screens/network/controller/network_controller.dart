@@ -63,7 +63,7 @@ class NetworkController extends GetxController {
             "id": doc2.id,
             "email": doc2["email"] ?? "Unknown",
             "name": doc2["username"] ?? "Unknown",
-            "totalProfit": doc1["refferralProfit"] ?? 0,
+            "totalProfit": doc2["refferralProfit"] ?? 0,
           };
           level2.add(user2);
 
@@ -77,7 +77,7 @@ class NetworkController extends GetxController {
               "id": doc3.id,
               "email": doc3["email"] ?? "Unknown",
               "name": doc3["username"] ?? "Unknown",
-              "totalProfit": doc1["refferralProfit"] ?? 0,
+              "totalProfit": doc3["refferralProfit"] ?? 0,
             };
             level3.add(user3);
           }
