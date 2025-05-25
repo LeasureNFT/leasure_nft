@@ -74,6 +74,15 @@ class PaymentMethodsScreen extends GetView<PaymentMethodController> {
                                         color: Colors.white,
                                         margin: EdgeInsets.all(10),
                                         child: ListTile(
+                                          trailing: IconButton(
+                                              onPressed: () {
+                                                controller.deletePaymentMethod(
+                                                    payment.id);
+                                              },
+                                              icon: Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                              )),
                                           title: Text(
                                             payment["accountName"],
                                             style: AppTextStyles.adaptiveText(
