@@ -270,6 +270,16 @@ class UserMainScreen extends GetView<UserDashboardController> {
                                     ontap: () {}),
                               ),
                               SizedBox(height: 10.h),
+                              Obx(
+                                () => _card(
+                                    iconPath: Icons.align_vertical_bottom_sharp,
+                                    context: context,
+                                    text1: "Today Profit",
+                                    text2:
+                                        "Rs ${controller.userModel.value?.todayProfit!.toStringAsFixed(2)}",
+                                    ontap: () {}),
+                              ),
+                              SizedBox(height: 10.h),
 
                               Obx(
                                 () => _card(
@@ -277,7 +287,7 @@ class UserMainScreen extends GetView<UserDashboardController> {
                                     context: context,
                                     text1: "Total Profit",
                                     text2:
-                                        "Rs ${controller.userModel.value?.refferralProfit!.toStringAsFixed(2)}",
+                                        "Rs ${controller.userModel.value?.referralProfit!.toStringAsFixed(2)}",
                                     ontap: () {}),
                               ),
                               SizedBox(height: 10.h),
@@ -291,17 +301,25 @@ class UserMainScreen extends GetView<UserDashboardController> {
                                     ontap: () {}),
                               ),
                               SizedBox(height: 10.h),
-                              
-                              SizedBox(height: 10.h),
                               Obx(
                                 () => _card(
-                                    iconPath: Icons.groups,
+                                    iconPath: Icons.pending_actions_rounded,
                                     context: context,
-                                    text1: "Referral Earn",
+                                    text1: "Pending Withdraw",
                                     text2:
-                                        "Rs ${controller.refferralProfit.value.toStringAsFixed(2)}",
+                                        "Rs ${controller.pendingWithdraw.value}",
                                     ontap: () {}),
                               ),
+                              SizedBox(height: 10.h),
+                              // Obx(
+                              //   () => _card(
+                              //       iconPath: Icons.groups,
+                              //       context: context,
+                              //       text1: "Referral Earn",
+                              //       text2:
+                              //           "Rs ${controller.refferralProfit.value.toStringAsFixed(2)}",
+                              //       ontap: () {}),
+                              // ),
                               SizedBox(height: 10.h),
                             ],
                           ),

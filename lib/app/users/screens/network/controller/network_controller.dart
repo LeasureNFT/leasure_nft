@@ -92,68 +92,85 @@ class NetworkController extends GetxController {
   }
 
   Future<void> updateReferralProfit() async {
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
+  String? userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return;
 
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-    DocumentReference userRef = firestore.collection('users').doc(userId);
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  DocumentReference userRef = firestore.collection('users').doc(userId);
 
-    DocumentSnapshot userDoc = await userRef.get();
-    if (!userDoc.exists) return;
+  DocumentSnapshot userDoc = await userRef.get();
+  if (!userDoc.exists) return;
 
-    // Get all Level 1 referrals
-    QuerySnapshot level1Snapshot = await firestore
+  // --- Initialize lastReferralProfit if not present ---
+  // double lastProfit = 0.0;
+  // if (!userDoc.data().toString().contains('lastReferralProfit')) {
+  //   await userRef.update({'lastReferralProfit': 0.0});
+  // } else {
+    
+  // }
+double lastProfit = double.tryParse(userDoc.get('lastReferralProfit')?.toString() ?? '0.0') ?? 0.0;
+  // --- Start Profit Calculation ---
+  double level1Total = 0.0;
+  double level2Total = 0.0;
+  double level3Total = 0.0;
+
+  // Level 1 referrals
+  QuerySnapshot level1Snapshot = await firestore
+      .collection('users')
+      .where('referredBy', isEqualTo: userId)
+      .get();
+
+  for (var level1Doc in level1Snapshot.docs) {
+    double level1 =
+        (double.tryParse(level1Doc['refferralProfit'].toString()) ?? 0.0) * 0.06;
+    level1Total += level1;
+
+    // Level 2 referrals
+    QuerySnapshot level2Snapshot = await firestore
         .collection('users')
-        .where('referredBy', isEqualTo: userId)
+        .where('referredBy', isEqualTo: level1Doc.id)
         .get();
 
-    for (var level1Doc in level1Snapshot.docs) {
-      double level1 =
-          (double.tryParse(level1Doc['refferralProfit'].toString()) ?? 0.0) *
-              0.06;
-      level1Profit .value+= level1;
+    for (var level2Doc in level2Snapshot.docs) {
+      double level2 =
+          (double.tryParse(level2Doc['refferralProfit'].toString()) ?? 0.0) *
+              0.04;
+      level2Total += level2;
 
-      // Level 2 referrals (children of Level 1)
-      QuerySnapshot level2Snapshot = await firestore
+      // Level 3 referrals
+      QuerySnapshot level3Snapshot = await firestore
           .collection('users')
-          .where('referredBy', isEqualTo: level1Doc.id)
+          .where('referredBy', isEqualTo: level2Doc.id)
           .get();
 
-      for (var level2Doc in level2Snapshot.docs) {
-        double level2 =
-            (double.tryParse(level2Doc['refferralProfit'].toString()) ?? 0.0) *
-                0.04;
-        level2Profit.value += level2;
-
-        // Level 3 referrals (children of Level 2)
-        QuerySnapshot level3Snapshot = await firestore
-            .collection('users')
-            .where('referredBy', isEqualTo: level2Doc.id)
-            .get();
-
-        for (var level3Doc in level3Snapshot.docs) {
-          double level3 =
-              (double.tryParse(level3Doc['refferralProfit'].toString()) ??
-                      0.0) *
-                  0.02;
-          level3Profit.value += level3;
-        }
+      for (var level3Doc in level3Snapshot.docs) {
+        double level3 =
+            (double.tryParse(level3Doc['refferralProfit'].toString()) ?? 0.0) *
+                0.02;
+        level3Total += level3;
       }
     }
+  }
+// 6136    594
+  double calculatedProfit = level1Total + level2Total + level3Total;
+  double difference = calculatedProfit - lastProfit;
 
-    // Add profits to the total profit
-    totalProfit .value= level1Profit.value + level2Profit.value + level3Profit.value;
-
-    // Update user cash vault with total profit
+  if (difference > 0.0) {
     await userRef.update({
-      "cashVault": FieldValue.increment(totalProfit.value),
+      'cashVault': FieldValue.increment(difference),
+      'lastReferralProfit': calculatedProfit,
     });
 
-    // Update local variables (optional, for UI purposes)
-
-    Get.log("✅ Referral Profit Updated: Rs $totalProfit");
-    Get.log("Level 1 Profit: Rs $level1Profit");
-    Get.log("Level 2 Profit: Rs $level2Profit");
-    Get.log("Level 3 Profit: Rs $level3Profit");
+    Get.log("✅ Referral Profit Updated: +$difference");
+  } else {
+    Get.log("ℹ️ No new referral profit to update.");
   }
+
+  // Update local observable variables (if used in UI)
+  level1Profit.value = level1Total;
+  level2Profit.value = level2Total;
+  level3Profit.value = level3Total;
+  totalProfit.value = calculatedProfit;
+}
+
 }

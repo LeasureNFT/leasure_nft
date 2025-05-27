@@ -35,7 +35,7 @@ class NetworkScreen extends GetView<NetworkController> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Total Profit",
+                          "Total Refferal Profit",
                           style: AppTextStyles.adaptiveText(context, 17)
                               .copyWith(
                                   fontWeight: FontWeight.normal,

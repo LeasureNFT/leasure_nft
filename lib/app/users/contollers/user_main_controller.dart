@@ -9,6 +9,8 @@ enum DashboardTab { home, deposit, task, withdraw, network, profile }
 class UserDashboardController extends GetxController {
   Rx<UserModel?> userModel = Rx<UserModel?>(null); // 🔥 Reactive UserModel
   RxDouble pendingAmount = 0.0.obs;
+  final RxDouble todayProfit = 0.0.obs;
+  final RxDouble pendingWithdraw = 0.0.obs;
   RxDouble totalProfit = 0.0.obs;
   final RxInt totalRefferral = 0.obs;
   final currentIndex = DashboardTab.home.index.obs;
@@ -101,7 +103,22 @@ class UserDashboardController extends GetxController {
       pendingAmount.value = totalAmount;
       print("✅ Real-time Pending Amount: Rs $totalAmount");
     });
+    FirebaseFirestore.instance
+      .collection('payments')
+      .where('userId', isEqualTo: userId)
+      .where('transactionType', isEqualTo: 'Withdraw')
+      .where('status', isEqualTo: 'pending')
+      .snapshots()
+      .listen((querySnapshot) {
+    double totalWithdraw = querySnapshot.docs.fold(0.0, (sum, doc) {
+      return sum + double.tryParse(doc['amount'].toString())!;
+    });
+
+    pendingWithdraw.value = totalWithdraw;
+    print("📤 Real-time Pending Withdraw Amount: Rs $totalWithdraw");
+  });
   }
+  
 
   Future<void> updateReferralProfit() async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;

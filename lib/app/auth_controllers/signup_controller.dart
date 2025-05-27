@@ -170,11 +170,14 @@ class SignupController extends GetxController {
           'createdAt': FieldValue.serverTimestamp(),
           'isUserBanned': false,
           'cashVault': '0',
+          "todayProfit": '0',
+          "lastReferralProfit": '0',
+          'updatedAt': FieldValue.serverTimestamp(),
           'depositAmount': '0',
           'withdrawAmount': '0',
           'reward': '0',
           'refferralProfit': '0',
-          'image': '',
+          'image': '',  
         });
 
         showToast('Account verified & created successfully!');
