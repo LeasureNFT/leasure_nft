@@ -155,11 +155,13 @@ class _ViewTaskScreenState extends State<ViewTaskScreen> {
                       );
                       return;
                     }
-                    await controller.submitTask(
-                      index: index,
-                      taskName: task["task"],
-                      taskDesc: task["description"],
-                    );
+                    controller.isLoading.value
+                        ? () {}
+                        : await controller.submitTask(
+                            index: index,
+                            taskName: task["task"],
+                            taskDesc: task["description"],
+                          );
                   },
                   loading: controller.isLoading.value,
                   text: "Done",

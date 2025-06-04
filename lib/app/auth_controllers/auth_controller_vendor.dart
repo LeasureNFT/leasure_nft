@@ -19,17 +19,16 @@ class ForgetPasswordController extends GetxController {
           .sendPasswordResetEmail(email: emailController.text.trim())
           .then((v) {
         isLoading.value = false;
-        showToast( 'Password reset email sent');
+        showToast('Password reset email sent to ${emailController.text.trim()}',
+            isError: false);
         Get.to(() => UserLoginScreen());
       }).onError((error, stackTrace) {
         isLoading.value = false;
-         showToast( 'Password reset email sent $error' , isError: true);
-        
+        showToast('Password reset email sent $error', isError: true);
       });
     } catch (e) {
       isLoading.value = false;
-      showToast( 'Error: $e', isError: true);
-
+      showToast('Error: $e', isError: true);
     }
   }
 }

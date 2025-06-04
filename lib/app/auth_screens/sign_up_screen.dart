@@ -83,16 +83,54 @@ class SignUpScreen extends GetView<SignupController> {
                         CustomTextField(
                           title: 'Email',
                           validator: (v) {
-                            if (v!.isEmpty) {
+                            if (v == null || v.trim().isEmpty) {
                               return 'Email is required';
                             }
-                            if (!v.isEmail) {
-                              return 'Enter a valid email';
+
+                            String email = v.trim();
+
+                            // Basic structure check
+                            if (!email.contains('@') ||
+                                !email.endsWith('.com')) {
+                              return 'Email must contain "@" and end with ".com"';
                             }
+
+                            // Length check
+                            if (email.length > 254) {
+                              return 'Email is too long';
+                            }
+
+                            // Must be Gmail only
+                            if (!email.toLowerCase().endsWith('@gmail.com')) {
+                              return 'Only Gmail addresses are allowed';
+                            }
+
+                            // Advanced regex for Gmail format
+                            final regex = RegExp(
+                                r"^(?!\.)(?!.*\.\.)([a-zA-Z0-9]+([._]?[a-zA-Z0-9]+)*)@gmail\.com$");
+                            if (!regex.hasMatch(email)) {
+                              return 'Enter a valid Gmail address';
+                            }
+
+                            // Disposable domain block (edge case)
+                            List<String> disposableDomains = [
+                              'mailinator.com',
+                              '10minutemail.com',
+                              'tempmail.com',
+                              'guerrillamail.com',
+                              'fakeinbox.com',
+                              'yopmail.com',
+                            ];
+
+                            String domain = email.split('@').last.toLowerCase();
+                            if (disposableDomains.contains(domain)) {
+                              return 'Disposable email addresses are not allowed';
+                            }
+
                             return null;
                           },
                           controller: controller.emailController,
-                          hintText: 'Enter your email',
+                          hintText: 'Always use original Gmail',
                           prefixIcon: Icons.email,
                           keyboardType: TextInputType.emailAddress,
                         ),

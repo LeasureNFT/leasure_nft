@@ -133,7 +133,7 @@ class UserProfileScreen extends GetView<ProfileController> {
                                 // "https://github.com/LeasureNFT/leasureNFT/releases/download/1.0.0/app-release.apk"
                                 // Get.to(() => AboutUsScreen());
                                 final Uri url = Uri.parse(
-                                    "https://github.com/LeasureNFT/leasure_nft/releases/download/1.0/app-release.apk");
+                                    "https://github.com/LeasureNFT/leasure_nft/releases/download/1.0.1/app-release.apk");
 
                                 if (await canLaunchUrl(url)) {
                                   await launchUrl(url,
