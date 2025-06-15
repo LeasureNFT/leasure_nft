@@ -1,3 +1,6 @@
+
+import 'package:universal_html/html.dart' as html;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +13,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:leasure_nft/app/core/widgets/custom_button.dart';
 import 'package:leasure_nft/app/core/widgets/custom_text_field.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
+import 'package:uuid/uuid.dart';
 
 class AddUserController extends GetxController {
   final isloading = false.obs;
@@ -17,34 +21,35 @@ class AddUserController extends GetxController {
   final TextEditingController emailController = TextEditingController();
   final GetStorage storage = GetStorage();
   Future<String> getDeviceId() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    String? storedId = storage.read('deviceId');
+    String deviceId = 'unknown_device';
 
-    if (storedId == null) {
-      if (GetPlatform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-        storedId = androidInfo.id;
-      } else if (GetPlatform.isIOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        storedId = iosInfo.identifierForVendor;
-      } else if (GetPlatform.isWeb) {
-        WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
-        storedId = webInfo.userAgent ?? 'unknown_web_device';
+    if (kIsWeb) {
+      // SAFELY read deviceId from localStorage and handle type errors
+      final stored = html.window.localStorage['deviceId'];
+      if (stored is String && stored.isNotEmpty) {
+        deviceId = stored;
+        Get.log("[DEBUG] Existing Web Device ID: $deviceId");
       } else {
-        storedId = 'unknown_device';
-      }
-      storage.write('deviceId', storedId);
-      if (kDebugMode) {
-        Get.log("[DEBUG] New Device ID generated: $storedId");
+        deviceId = const Uuid().v4();
+        html.window.localStorage['deviceId'] = deviceId;
+        Get.log("[DEBUG] New Web Device ID: $deviceId");
       }
     } else {
-      if (kDebugMode) {
-        Get.log("[DEBUG] Existing Device ID found: $storedId");
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      if (GetPlatform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id;
+      } else if (GetPlatform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        deviceId = iosInfo.identifierForVendor ?? 'unknown_ios_device';
+      } else {
+        deviceId = 'unsupported_platform';
       }
+      Get.log("[DEBUG] Native Device ID: $deviceId");
     }
-    return storedId!;
-  }
 
+    return deviceId;
+  }
   void addUser() async {
     try {
       isloading.value = true;
@@ -68,6 +73,9 @@ class AddUserController extends GetxController {
           "depositAmount": "0",
           "withdrawAmount": "0",
           "reward": "0",
+          "todayProfit": '0',
+          "lastReferralProfit": '0',
+          'updatedAt': FieldValue.serverTimestamp(),
           "cashVault": "0",
           'deviceId': deviceId,
           "isUserBanned": false,
