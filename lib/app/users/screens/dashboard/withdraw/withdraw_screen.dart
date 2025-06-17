@@ -8,6 +8,7 @@ import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/custom_button.dart';
 import 'package:leasure_nft/app/core/widgets/custom_text_field.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
+import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/users/contollers/user_main_controller.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/withdraw/controller/user_withdraw_controller.dart';
 
@@ -205,7 +206,11 @@ class WithdrawalScreen extends GetView<UserWithdrawController> {
                       () => CustomButton(
                           loading: controller.isloading.value,
                           onPressed: () async {
-                            await controller.submitPayment();
+                            if (controller.isloading.value) {
+                              showToast("Please wait, Processing...");
+                            } else {
+                              await controller.submitPayment();
+                            }
                           },
                           text: "Withdraw"),
                     )

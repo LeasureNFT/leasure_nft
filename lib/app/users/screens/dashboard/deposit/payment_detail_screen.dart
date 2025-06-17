@@ -107,8 +107,7 @@ class PaymentDetailScreen extends StatelessWidget {
                                       onTap: () {
                                         Clipboard.setData(ClipboardData(
                                             text: payment['accountNumber']));
-showToast(
-                                            "Copied to clipboard");
+                                        showToast("Copied to clipboard");
                                       },
                                       child: Icon(
                                         Icons.copy,
@@ -284,12 +283,15 @@ showToast(
                     () => CustomButton(
                         onPressed: () {
                           if (formkey.currentState!.validate()) {
+                            if (controller.isloading.value) {
+                              showToast("Please wait, processing...");
+                            }else{
                             controller.submitPayment(
                                 acName: payment['accountName'],
                                 acNumber: payment['accountNumber'],
                                 holdername: payment["bankName"],
                                 paymentmethod: payment['accountName']);
-                          }
+                          }}
                         },
                         loading: controller.isloading.value,
                         text: "Submit"),
