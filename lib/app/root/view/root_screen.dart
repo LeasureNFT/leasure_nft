@@ -26,53 +26,79 @@ class RootScreen extends GetView<RootController> {
     return GetBuilder<RootController>(
       init: RootController(),
       builder: (controller) => Scaffold(
-        key: scaffoldKey,
-        resizeToAvoidBottomInset: false,
-        body: StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, snapshot) {
-            if (refCode != null) {
-              // If ref is present in URL
-              if (!snapshot.hasData) {
-                // User not logged in → Redirect to signup
-                return SignUpScreen();
-              } else {
-                // User already logged in → Show message
-                return AlertDialog(
-                  title: Text("Referral Code Detected"),
-                  content: Text(
-                      "You are already logged in. Referral codes can only be used by new users."),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Get.off(
-                          snapshot.data!.email == "admin@gmail.com"
-                              ? AdminMainScreen()
-                              : UserDashboardScreen()),
-                      child: Text("Continue to Dashboard"),
-                    ),
-                  ],
-                );
-              }
-            }
+  key: scaffoldKey,
+  resizeToAvoidBottomInset: false,
+  body: StreamBuilder<User?>(
+    stream: FirebaseAuth.instance.authStateChanges(),
+    builder: (context, snapshot) {
+      // Check if referral code is in cookies or URL
+      if (refCode != null) {
+        if (!snapshot.hasData) {
+          // Not logged in → Show SignUp
+          return SignUpScreen();
+        } else {
+          // Logged in but referral exists → Show custom dialog
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => AlertDialog(
+                title: Text("Referral Code Detected"),
+                content: Text(
+                  "A referral code is detected.\n\n"
+                  "You are already logged in as ${snapshot.data?.email}.\n"
+                  "Do you want to log out and sign up with the new referral code?",
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Dismiss dialog
+                      Get.off(
+                        snapshot.data!.email == "admin@gmail.com"
+                            ? AdminMainScreen()
+                            : UserDashboardScreen(),
+                      );
+                    },
+                    child: Text("Cancel"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      // Logout current user
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.of(context).pop(); // Dismiss dialog
+                      Get.off(() => SignUpScreen());
+                    },
+                    child: Text("Continue with New Referral"),
+                  ),
+                ],
+              ),
+            );
+          });
 
-            // ✅ Normal Firebase Auth check
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+          // Show loading screen while dialog is visible
+          return const Center(child: CircularProgressIndicator());
+        }
+      }
 
-            if (snapshot.hasData) {
-              final User? user = snapshot.data;
-              if (user != null && user.email == "admin@gmail.com") {
-                return AdminMainScreen();
-              } else {
-                return UserDashboardScreen();
-              }
-            } else {
-              return UserLoginScreen();
-            }
-          },
-        ),
-      ),
+      // ✅ Default Auth Check
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (snapshot.hasData) {
+        final User? user = snapshot.data;
+        if (user != null && user.email == "admin@gmail.com") {
+          return AdminMainScreen();
+        } else {
+          return UserDashboardScreen();
+        }
+      } else {
+        return UserLoginScreen();
+      }
+    },
+  ),
+)
+
     );
   }
 }
