@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,7 +37,7 @@ class UserWithdrawController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchCashVault();
+    listenToCashVault();
     // getPaymentMethods();
   }
 
@@ -46,21 +47,28 @@ class UserWithdrawController extends GetxController {
     return transactionId.toString();
   }
 
-  void fetchCashVault() async {
-    try {
-      final userId = FirebaseAuth.instance.currentUser!.uid;
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-      if (userDoc.exists) {
-        cashVault.value = userDoc['cashVault'] ?? 0;
-      }
-    } catch (e) {
-      print("Error fetching cashVault: $e");
-    }
-  }
+  StreamSubscription<DocumentSnapshot>? _cashVaultSubscription;
 
+void listenToCashVault() {
+  final userId = FirebaseAuth.instance.currentUser!.uid;
+
+  _cashVaultSubscription = FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .snapshots()
+      .listen((DocumentSnapshot snapshot) {
+    if (snapshot.exists) {
+      cashVault.value = snapshot['cashVault']?.toDouble() ?? 0.0;
+    }
+  }, onError: (error) {
+    print("Error listening to cashVault: $error");
+  });
+}
+@override
+void onClose() {
+  _cashVaultSubscription?.cancel();
+  super.onClose();
+}
   // Future<void> getPaymentMethods() async {
   //   try {
   //     isloading.value = true;
@@ -111,6 +119,11 @@ class UserWithdrawController extends GetxController {
         isloading.value = false;
         return;
       }
+      final withdrawAmount =
+          double.tryParse(amountController.text.trim()) ?? 0.0;
+      await FirebaseFirestore.instance.collection('users').doc(user_id).update({
+        "cashVault": FieldValue.increment(-withdrawAmount),
+      });
 
       await FirebaseFirestore.instance.collection('payments').doc().set({
         "userId": user_id,

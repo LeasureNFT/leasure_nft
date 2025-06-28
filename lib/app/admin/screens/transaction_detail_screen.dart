@@ -230,6 +230,22 @@ class TransactionDetailScreen extends GetView<TransactionDetailsController> {
                                       fontWeight: FontWeight.normal)),
                         ],
                       ),
+                      const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("User Total Amount",
+                              style: AppTextStyles.adaptiveText(context, 16)
+                                  .copyWith(
+                                      color: AppColors.primaryColor,
+                                      fontWeight: FontWeight.bold)),
+                          Text(transaction['cashVault'].toStringAsFixed(2),
+                              style: AppTextStyles.adaptiveText(context, 16)
+                                  .copyWith(
+                                      color: AppColors.blackColor,
+                                      fontWeight: FontWeight.normal)),
+                        ],
+                      ),
                       const SizedBox(height: 20),
 
                       const Divider(thickness: 1, color: Colors.grey),
@@ -337,6 +353,7 @@ class TransactionDetailScreen extends GetView<TransactionDetailsController> {
                                           onPressed: () async {
                                             await controller.cancel(
                                               docId: transaction["id"],
+                                              withdrawAM: transaction["amount"],
                                             );
                                           },
                                           child: controller.isLoading1.value

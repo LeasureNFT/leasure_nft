@@ -55,9 +55,11 @@ Future<void> fetchPayments() async {
         if (userDoc.exists) {
           paymentData['username'] = userDoc.data()?['username'] ?? 'Unknown';
           paymentData['email'] = userDoc.data()?['email'] ?? 'Unknown';
+          paymentData['cashVault'] = double.parse(userDoc.data()?['cashVault'].toString() ?? "0") ;
         } else {
           paymentData['username'] = 'Unknown';
           paymentData['email'] = 'Unknown';
+          paymentData['cashVault'] = 0.0; // Default value if user not found
         }
 
         // 🔥 Categorize payments

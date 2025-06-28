@@ -63,7 +63,7 @@ class TransactionDetailsController extends GetxController {
     }
   }
 
-  Future<void> cancel({docId}) async {
+  Future<void> cancel({docId, withdrawAM}) async {
     try {
       isLoading1.value = true;
       await FirebaseFirestore.instance
@@ -71,12 +71,25 @@ class TransactionDetailsController extends GetxController {
           .doc(docId) // 🔥 Correct document select karo
           .update({'status': 'cancelled'}); // ✅ Status update to "completed"
 
+      // 2. Get the userId from the payment document
+      final paymentDoc = await FirebaseFirestore.instance
+          .collection('payments')
+          .doc(docId)
+          .get();
+
+      final userId = paymentDoc['userId'];
+final am = double.tryParse(withdrawAM.toString()) ?? 0.0;
+      // 3. Refund amount to user's cashVault
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'cashVault': FieldValue.increment(am),
+      });
+
       final depositController = Get.put(DepositRecordController());
 
       await depositController.fetchPayments();
       isLoading1.value = false;
       Fluttertoast.showToast(
-        msg: "Payment Cancelled",
+        msg: "Payment Cancelled , Amount has been refunded to your account",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -87,8 +100,17 @@ class TransactionDetailsController extends GetxController {
 
       // 🔄 Data refresh after update
     } catch (e) {
-      Get.snackbar("Error", "Failed to confirm deposit: ${e.toString()}",
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+        msg: "Error , Failed to confirm deposit: ${e.toString()}",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      Get.log("Error confirming deposit: ${e.toString()}");
+
       isLoading1.value = false;
     } finally {
       isLoading1.value = false;
@@ -144,7 +166,7 @@ class TransactionDetailsController extends GetxController {
         transaction.update(userRef, {
           'withdrawAmount':
               FieldValue.increment(am), // ✅ Add to Withdraw Amount
-          'cashVault': FieldValue.increment(-am), // ✅ Deduct from Cash Vault
+          // ✅ Deduct from Cash Vault
         });
       });
 
