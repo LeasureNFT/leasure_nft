@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 
-class DepositRecordController extends GetxController with GetSingleTickerProviderStateMixin {
+class DepositRecordController extends GetxController
+    with GetSingleTickerProviderStateMixin {
   var pendingPayments = <Map<String, dynamic>>[].obs;
   var completedPayments = <Map<String, dynamic>>[].obs;
   var cancelledPayments = <Map<String, dynamic>>[].obs;
@@ -42,19 +43,26 @@ class DepositRecordController extends GetxController with GetSingleTickerProvide
       List<Map<String, dynamic>> cancelledList = [];
 
       for (var doc in querySnapshot.docs) {
-        Map<String, dynamic> paymentData = Map<String, dynamic>.from(doc.data()); // ✅ Correct Type Conversion
+        Map<String, dynamic> paymentData =
+            Map<String, dynamic>.from(doc.data()); // ✅ Correct Type Conversion
         paymentData['id'] = doc.id; // Add document ID
 
         String userId = paymentData['userId'] ?? '';
 
         // 🔥 Fetch user details
-        var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        var userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
         if (userDoc.exists) {
           paymentData['username'] = userDoc.data()?['username'] ?? 'Unknown';
           paymentData['email'] = userDoc.data()?['email'] ?? 'Unknown';
+          paymentData['cashVault'] =
+              double.parse(userDoc.data()?['cashVault'].toString() ?? "0");
         } else {
           paymentData['username'] = 'Unknown';
           paymentData['email'] = 'Unknown';
+          paymentData['cashVault'] = "0";
         }
 
         // 🔥 Categorize payments

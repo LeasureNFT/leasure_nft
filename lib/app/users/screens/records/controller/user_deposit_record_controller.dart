@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 
-class UserDepositRecordController extends GetxController  {
- var pendingPayments = <Map<String, dynamic>>[].obs;
+class UserDepositRecordController extends GetxController {
+  var pendingPayments = <Map<String, dynamic>>[].obs;
   var completedPayments = <Map<String, dynamic>>[].obs;
   var cancelledPayments = <Map<String, dynamic>>[].obs;
 
@@ -58,9 +58,12 @@ class UserDepositRecordController extends GetxController  {
         if (userDoc.exists) {
           paymentData['username'] = userDoc.data()?['username'] ?? 'Unknown';
           paymentData['email'] = userDoc.data()?['email'] ?? 'Unknown';
+          paymentData['cashVault'] =
+              double.parse(userDoc.data()?['cashVault'].toString() ?? "0");
         } else {
           paymentData['username'] = 'Unknown';
           paymentData['email'] = 'Unknown';
+          paymentData['cashVault'] = "0";
         }
 
         // 🔥 Categorize payments
@@ -85,28 +88,29 @@ class UserDepositRecordController extends GetxController  {
       isLoading(false);
     }
   }
+
 // Function to delete old Deposit transactions (older than 1 month) for current user
-Future<void> deleteOldDeposits(Timestamp oneMonthAgo, String userId) async {
-  try {
-    QuerySnapshot oldPaymentsSnapshot = await FirebaseFirestore.instance
-        .collection('payments')
-        .where('transactionType', isEqualTo: 'Deposit')
-        .where('userId', isEqualTo: userId) // ✅ Only current user's transactions
-        .where('createdAt', isLessThan: oneMonthAgo) // 🔥 Older than 1 month
-        .get();
+  Future<void> deleteOldDeposits(Timestamp oneMonthAgo, String userId) async {
+    try {
+      QuerySnapshot oldPaymentsSnapshot = await FirebaseFirestore.instance
+          .collection('payments')
+          .where('transactionType', isEqualTo: 'Deposit')
+          .where('userId',
+              isEqualTo: userId) // ✅ Only current user's transactions
+          .where('createdAt', isLessThan: oneMonthAgo) // 🔥 Older than 1 month
+          .get();
 
-    WriteBatch batch = FirebaseFirestore.instance.batch();
+      WriteBatch batch = FirebaseFirestore.instance.batch();
 
-    for (var doc in oldPaymentsSnapshot.docs) {
-      batch.delete(doc.reference);
+      for (var doc in oldPaymentsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+      Get.log(
+          "🔥 Old Deposit transactions deleted successfully for user: $userId.");
+    } catch (e) {
+      Get.log("❌ Error deleting old Deposit transactions: $e");
     }
-
-    await batch.commit();
-    Get.log("🔥 Old Deposit transactions deleted successfully for user: $userId.");
-  } catch (e) {
-    Get.log("❌ Error deleting old Deposit transactions: $e");
   }
 }
-
-  
-} 
