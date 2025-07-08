@@ -242,7 +242,7 @@ class LoginController extends GetxController {
       }
 
       // Step 4: Admin check
-      if (user.email == "admin@gmail.com") {
+      if (user.email == "leasurenft.suport@gmail.com") {
         AppPrefernces.setAdmin("admin");
         showToast("Admin logged in successfully");
         Get.offAllNamed(AppRoutes.adminDashboard);
