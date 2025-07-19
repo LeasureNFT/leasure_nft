@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:leasure_nft/app/admin/screens/admin_main_screen.dart';
 import 'package:leasure_nft/app/auth_screens/sign_up_screen.dart';
 import 'package:leasure_nft/app/root/controller/root_controller.dart';

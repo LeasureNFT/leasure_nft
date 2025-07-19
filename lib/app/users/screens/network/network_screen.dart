@@ -24,6 +24,11 @@ class NetworkScreen extends GetView<NetworkController> {
                     Header(
                         title: "Network",
                         ontap: () {
+                          if (!Get.isRegistered<UserDashboardController>()) {
+                            Get.put(UserDashboardController());
+                          }
+
+// Ab safely use kro
                           final controller1 =
                               Get.find<UserDashboardController>();
                           controller1.changePage(DashboardTab.home.index);
