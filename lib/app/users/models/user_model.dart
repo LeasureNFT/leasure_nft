@@ -48,11 +48,15 @@ class UserModel {
       image: data['image'],
       password: data['password'],
       cashVault: double.tryParse(data['cashVault']?.toString() ?? '0') ?? 0.0,
-      depositAmount: double.tryParse(data['depositAmount']?.toString() ?? '0') ?? 0.0,
+      depositAmount:
+          double.tryParse(data['depositAmount']?.toString() ?? '0') ?? 0.0,
       reward: double.tryParse(data['reward']?.toString() ?? '0') ?? 0.0,
-      withdrawAmount: double.tryParse(data['withdrawAmount']?.toString() ?? '0') ?? 0.0,
-      referralProfit: double.tryParse(data['refferralProfit']?.toString() ?? '0') ?? 0.0,
-      todayProfit: double.tryParse(data['todayProfit']?.toString() ?? '0') ?? 0.0,
+      withdrawAmount:
+          double.tryParse(data['withdrawAmount']?.toString() ?? '0') ?? 0.0,
+      referralProfit:
+          double.tryParse(data['refferralProfit']?.toString() ?? '0') ?? 0.0,
+      todayProfit:
+          double.tryParse(data['todayProfit']?.toString() ?? '0') ?? 0.0,
       referredBy: data['referredBy'],
       deviceId: data['deviceId'],
       isUserBanned: data['isUserBanned'] ?? false,

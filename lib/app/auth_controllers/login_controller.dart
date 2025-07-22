@@ -73,7 +73,6 @@
 //       );
 //        showToast('User authenticated successfully');
 
-
 //       final user = userCredential.user;
 //       if (user == null) {
 //         showToast('User authentication failed', isError: true);
@@ -145,7 +144,7 @@
 //     }
 //   }
 // }
- // For web localStorage
+// For web localStorage
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -212,7 +211,7 @@ class LoginController extends GetxController {
 
     try {
       // Step 1: Get current device ID
-      
+
       // final currentDeviceId = await getDeviceId();
       // if (currentDeviceId.isEmpty) {
       //   showToast('Device ID retrieval failed', isError: true);
@@ -232,8 +231,6 @@ class LoginController extends GetxController {
         email: email,
         password: password,
       );
-
-      
 
       final user = userCredential.user;
       if (user == null) {
@@ -284,7 +281,7 @@ class LoginController extends GetxController {
       //   return;
       // }
 
-      // Step 8: Login success
+      // Step 7: Login success
       showToast('Login successful');
       Get.offAllNamed(AppRoutes.userDashboard);
     } on FirebaseAuthException catch (e) {

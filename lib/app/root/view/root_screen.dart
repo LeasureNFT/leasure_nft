@@ -6,7 +6,7 @@ import 'package:leasure_nft/app/auth_screens/sign_up_screen.dart';
 import 'package:leasure_nft/app/root/controller/root_controller.dart';
 import 'package:leasure_nft/app/auth_screens/user_login_screen.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/user_dashboard_screen.dart';
-import 'package:universal_html/html.dart' as html; // For cookies
+import 'package:universal_html/html.dart' as html;  // Adder cood for Firestore
 
 class RootScreen extends GetView<RootController> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -89,7 +89,8 @@ class RootScreen extends GetView<RootController> {
 
                   if (snapshot.hasData) {
                     final User? user = snapshot.data;
-                    if (user != null && user.email == "leasurenft.suport@gmail.com") {
+                    if (user != null &&
+                        user.email == "leasurenft.suport@gmail.com") {
                       return AdminMainScreen();
                     } else {
                       return UserDashboardScreen();

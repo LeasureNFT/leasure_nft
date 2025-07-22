@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
+import 'dart:async';
 
 class DashboardController extends GetxController {
   final auth = FirebaseAuth.instance;
@@ -9,12 +10,21 @@ class DashboardController extends GetxController {
   RxList<Map<String, dynamic>> usersList = <Map<String, dynamic>>[].obs;
   RxInt totalUsers = 0.obs; // ✅ Total Users Count
   RxInt totalBannedUsers = 0.obs;
+  final isLoading = true.obs;
+
+  StreamSubscription<QuerySnapshot>? _usersSubscription;
 
   @override
   void onInit() {
     super.onInit();
     getUsers();
     calculateTotalRevenue(); // ✅ Automatically fetch users on screen load
+  }
+
+  @override
+  void onClose() {
+    _usersSubscription?.cancel();
+    super.onClose();
   }
 
   void logout() async {
@@ -25,8 +35,11 @@ class DashboardController extends GetxController {
   // 🔹 Firestore سے تمام Users حاصل کرنے کا Function
   void getUsers() {
     try {
-      FirebaseFirestore.instance
+      isLoading.value = true;
+      _usersSubscription?.cancel();
+      _usersSubscription = FirebaseFirestore.instance
           .collection('users')
+           // Limit to 50 users for efficiency; adjust as needed
           .snapshots()
           .listen((snapshot) {
         final updatedUsers = snapshot.docs.map((doc) => doc.data()).toList();
@@ -40,8 +53,13 @@ class DashboardController extends GetxController {
         // ✅ Count Banned Users (isUserBanned == true)
         totalBannedUsers.value =
             updatedUsers.where((user) => user['isUserBanned'] == true).length;
+        isLoading.value = false;
+      }, onError: (e) {
+        isLoading.value = false;
+        Get.snackbar("Error", "Failed to fetch users: $e");
       });
     } catch (e) {
+      isLoading.value = false;
       Get.snackbar("Error", "Failed to fetch users: $e");
     }
   }
@@ -66,7 +84,15 @@ class DashboardController extends GetxController {
       double totalProfit = 0.0;
 
       for (var doc in taskDetailsSnapshot.docs) {
-        double profit = doc['profit'] ?? 0.0; // Ensure profit exists
+        double profit = 0.0;
+        final profitRaw = doc['profit'];
+        if (profitRaw is int) {
+          profit = double.parse(profitRaw.toString());
+        } else if (profitRaw is double) {
+          profit = profitRaw;
+        } else if (profitRaw is String) {
+          profit = double.tryParse(profitRaw) ?? 0.0;
+        }
         totalProfit += profit;
       }
 

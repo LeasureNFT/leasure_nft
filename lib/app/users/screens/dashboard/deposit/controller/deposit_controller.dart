@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -32,59 +31,62 @@ class DepositController extends GetxController {
   final amount = "0".obs;
 
   pickCahalanImage() async {
-  try {
-    final XFile? img = await imgPicker.pickImage(source: ImageSource.gallery);
+    try {
+      final XFile? img = await imgPicker.pickImage(source: ImageSource.gallery);
 
-    if (img == null) {
-      print("⚠ No Image Selected");
-      return;
+      if (img == null) {
+        print("⚠ No Image Selected");
+        return;
+      }
+
+      Uint8List imageBytes;
+
+      if (GetPlatform.isWeb) {
+        // Web: Directly read image bytes
+        imageBytes = await img.readAsBytes();
+        print("🌐 Running on Web");
+      } else {
+        // Mobile/Desktop: Read file from path
+        filePath.value = File(img.path);
+        imageBytes = await filePath.value!.readAsBytes();
+        print("📱 Running on Mobile/Desktop");
+      }
+
+      // 🔹 Compress Image Before Base64 Encoding
+      Uint8List compressedBytes = await compressImage(imageBytes);
+
+      // Convert to Base64
+      base64Image.value = base64Encode(compressedBytes);
+      print(
+          "✅ Image Converted to Base64 (Size: ${compressedBytes.length} bytes)");
+    } catch (e) {
+      print("❌ Error picking image: $e");
     }
-
-    Uint8List imageBytes;
-
-    if (GetPlatform.isWeb) {
-      // Web: Directly read image bytes
-      imageBytes = await img.readAsBytes();
-      print("🌐 Running on Web");
-    } else {
-      // Mobile/Desktop: Read file from path
-      filePath.value = File(img.path);
-      imageBytes = await filePath.value!.readAsBytes();
-      print("📱 Running on Mobile/Desktop");
-    }
-
-    // 🔹 Compress Image Before Base64 Encoding
-    Uint8List compressedBytes = await compressImage(imageBytes);
-
-    // Convert to Base64
-    base64Image.value = base64Encode(compressedBytes);
-    print("✅ Image Converted to Base64 (Size: ${compressedBytes.length} bytes)");
-
-  } catch (e) {
-    print("❌ Error picking image: $e");
   }
-}
 
 // 🔥 Image Compression Function
-Future<Uint8List> compressImage(Uint8List imageBytes) async {
-  try {
-    img.Image? originalImage = img.decodeImage(imageBytes);
-    if (originalImage == null) {
-      print("⚠ Failed to decode image");
-      return imageBytes;
+  Future<Uint8List> compressImage(Uint8List imageBytes) async {
+    try {
+      img.Image? originalImage = img.decodeImage(imageBytes);
+      if (originalImage == null) {
+        print("⚠ Failed to decode image");
+        return imageBytes;
+      }
+
+      // Resize & Compress Image
+      img.Image resizedImage =
+          img.copyResize(originalImage, width: 800); // Reduce width
+      Uint8List compressedBytes =
+          img.encodeJpg(resizedImage, quality: 70); // 70% quality
+
+      print("📉 Image Compressed Successfully");
+      return compressedBytes;
+    } catch (e) {
+      print("❌ Error compressing image: $e");
+      return imageBytes; // Return original if compression fails
     }
-
-    // Resize & Compress Image
-    img.Image resizedImage = img.copyResize(originalImage, width: 800); // Reduce width
-    Uint8List compressedBytes = img.encodeJpg(resizedImage, quality: 70); // 70% quality
-
-    print("📉 Image Compressed Successfully");
-    return compressedBytes;
-  } catch (e) {
-    print("❌ Error compressing image: $e");
-    return imageBytes; // Return original if compression fails
   }
-}
+
   String generateTransactionId() {
     Random random = Random();
     int transactionId = random.nextInt(90000) + 10000; // 10000 to 99999
@@ -110,11 +112,25 @@ Future<Uint8List> compressImage(Uint8List imageBytes) async {
     try {
       isloading.value = true;
       final userId = FirebaseAuth.instance.currentUser!.uid;
+      // Ban check
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (userDoc['isUserBanned'] == true) {
+        Fluttertoast.showToast(
+          msg: "Your account has been banned. Please contact admin.",
+          backgroundColor: Colors.red,
+        );
+        await FirebaseAuth.instance.signOut();
+        Get.offAllNamed('/login');
+        isloading.value = false;
+        return;
+      }
 
       Get.log(base64Image.toString());
 
       if (base64Image.value.isEmpty) {
-       
         // ✅ Corrected Condition
         Fluttertoast.showToast(
             msg: "❌ No Image Selected!", backgroundColor: Colors.red);

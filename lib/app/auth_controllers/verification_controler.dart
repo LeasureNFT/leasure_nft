@@ -132,7 +132,9 @@ class VerificationController extends GetxController {
       } else {
         // Email not verified – Delete unverified user
         await refreshedUser?.delete();
-        showToast("Email not verified. Please go back and sigun with original emmail", isError: true);
+        showToast(
+            "Email not verified. Please go back and sigun with original emmail",
+            isError: true);
         Get.offAllNamed(AppRoutes.signUp);
       }
     } catch (e) {

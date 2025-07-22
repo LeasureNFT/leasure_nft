@@ -49,26 +49,27 @@ class UserWithdrawController extends GetxController {
 
   StreamSubscription<DocumentSnapshot>? _cashVaultSubscription;
 
-void listenToCashVault() {
-  final userId = FirebaseAuth.instance.currentUser!.uid;
+  void listenToCashVault() {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
 
-  _cashVaultSubscription = FirebaseFirestore.instance
-      .collection('users')
-      .doc(userId)
-      .snapshots()
-      .listen((DocumentSnapshot snapshot) {
-    if (snapshot.exists) {
-      cashVault.value = snapshot['cashVault']?.toDouble() ?? 0.0;
-    }
-  }, onError: (error) {
-    print("Error listening to cashVault: $error");
-  });
-}
-@override
-void onClose() {
-  _cashVaultSubscription?.cancel();
-  super.onClose();
-}
+    _cashVaultSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen((DocumentSnapshot snapshot) {
+      if (snapshot.exists) {
+        cashVault.value = snapshot['cashVault']?.toDouble() ?? 0.0;
+      }
+    }, onError: (error) {
+      print("Error listening to cashVault: $error");
+    });
+  }
+
+  @override
+  void onClose() {
+    _cashVaultSubscription?.cancel();
+    super.onClose();
+  }
   // Future<void> getPaymentMethods() async {
   //   try {
   //     isloading.value = true;
@@ -111,6 +112,19 @@ void onClose() {
       isloading.value = true;
 
       final user_id = FirebaseAuth.instance.currentUser!.uid;
+      // Ban check
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user_id)
+          .get();
+      if (userDoc['isUserBanned'] == true) {
+        showToast("Your account has been banned. Please contact admin.",
+            isError: true);
+        await FirebaseAuth.instance.signOut();
+        Get.offAllNamed('/login');
+        isloading.value = false;
+        return;
+      }
 
       if (cashVault.value < 500) {
         CustomLoading.hide();

@@ -19,32 +19,37 @@ class UserDashboardScreen extends GetView<UserDashboardController> {
     return GetBuilder<UserDashboardController>(
       init: UserDashboardController(),
       builder: (controller) => Scaffold(
-        body: SafeArea(
-          child: PageView.builder(
-            controller: controller.pageController,
-            onPageChanged: (index) {
-              controller.changePage(index);
-            },
-            itemCount: DashboardTab.values.length,
-            physics: NeverScrollableScrollPhysics(), // Disable swipe
-            itemBuilder: (context, index) {
-              switch (DashboardTab.values[index]) {
-                case DashboardTab.deposit:
-                  return DepositScreen();
-                case DashboardTab.task:
-                  return UserTaskScreen();
-                case DashboardTab.home:
-                  return const UserMainScreen();
-                case DashboardTab.withdraw:
-                  return WithdrawalScreen();
-                case DashboardTab.profile:
-                  return UserProfileScreen();
-                case DashboardTab.network:
-                  return NetworkScreen();
-              }
-            },
-          ),
-        ),
+        body: Obx(() {
+          if (controller.isloading.value) {
+            return Center(child: CircularProgressIndicator());
+          }
+          return SafeArea(
+            child: PageView.builder(
+              controller: controller.pageController,
+              onPageChanged: (index) {
+                controller.changePage(index);
+              },
+              itemCount: DashboardTab.values.length,
+              physics: NeverScrollableScrollPhysics(), // Disable swipe
+              itemBuilder: (context, index) {
+                switch (DashboardTab.values[index]) {
+                  case DashboardTab.deposit:
+                    return DepositScreen();
+                  case DashboardTab.task:
+                    return UserTaskScreen();
+                  case DashboardTab.home:
+                    return const UserMainScreen();
+                  case DashboardTab.withdraw:
+                    return WithdrawalScreen();
+                  case DashboardTab.profile:
+                    return UserProfileScreen();
+                  case DashboardTab.network:
+                    return NetworkScreen();
+                }
+              },
+            ),
+          );
+        }),
         bottomNavigationBar: Obx(
           () => Container(
             height: 70.h,

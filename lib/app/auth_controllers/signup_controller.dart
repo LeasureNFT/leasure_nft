@@ -147,42 +147,37 @@ class SignupController extends GetxController {
       }
 
       // Create user with email and password
-       await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-              email: emailController.text.trim(),
-              password: passwordController.text.trim());
-
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim());
 
       // Send email verification
-      
+
       final refreshedUser = FirebaseAuth.instance.currentUser;
 
+      // Email is verified – Save user data to Firestore
+      await firestore.collection('users').doc(refreshedUser!.uid).set({
+        'email': emailController.text.trim(),
+        'userId': refreshedUser.uid,
+        'username': nameController.text.trim(),
+        'password': passwordController.text.trim(),
+        'deviceId': await getDeviceId(),
+        'referredBy': refferalCodeController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'isUserBanned': false,
+        'cashVault': '0',
+        "todayProfit": '0',
+        "lastReferralProfit": '0',
+        'updatedAt': FieldValue.serverTimestamp(),
+        'depositAmount': '0',
+        'withdrawAmount': '0',
+        'reward': '0',
+        'refferralProfit': '0',
+        'image': '',
+      });
 
-      
-        // Email is verified – Save user data to Firestore
-        await firestore.collection('users').doc(refreshedUser!.uid).set({
-          'email': emailController.text.trim(),
-          'userId': refreshedUser.uid,
-          'username': nameController.text.trim(),
-          'password': passwordController.text.trim(),
-          'deviceId': await getDeviceId(),
-          'referredBy': refferalCodeController.text.trim(),
-          'createdAt': FieldValue.serverTimestamp(),
-          'isUserBanned': false,
-          'cashVault': '0',
-          "todayProfit": '0',
-          "lastReferralProfit": '0',
-          'updatedAt': FieldValue.serverTimestamp(),
-          'depositAmount': '0',
-          'withdrawAmount': '0',
-          'reward': '0',
-          'refferralProfit': '0',
-          'image': '',  
-        });
-
-        showToast('Account verified & created successfully!');
-        Get.offAllNamed(AppRoutes.login);
-    
+      showToast('Account verified & created successfully!');
+      Get.offAllNamed(AppRoutes.login);
     } on FirebaseAuthException catch (e) {
       showToast("Signup failed: ${e.message}", isError: true);
       Get.log("[ERROR] Firebase Auth Exception: ${e.message}");
