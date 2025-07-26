@@ -66,52 +66,61 @@ class TransactionDetailsController extends GetxController {
   Future<void> cancel({docId, withdrawAM}) async {
     try {
       isLoading1.value = true;
-      await FirebaseFirestore.instance
-          .collection('payments')
-          .doc(docId) // 🔥 Correct document select karo
-          .update({'status': 'cancelled'}); // ✅ Status update to "completed"
 
-      // 2. Get the userId from the payment document
+      // Get the payment document first to check transaction type
       final paymentDoc = await FirebaseFirestore.instance
           .collection('payments')
           .doc(docId)
           .get();
 
-      final userId = paymentDoc['userId'];
-final am = double.tryParse(withdrawAM.toString()) ?? 0.0;
-      // 3. Refund amount to user's cashVault
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'cashVault': FieldValue.increment(am),
-      });
+      if (!paymentDoc.exists) {
+        Fluttertoast.showToast(
+          msg: "Payment document not found",
+          backgroundColor: Colors.red,
+        );
+        return;
+      }
+
+      final transactionType = paymentDoc.data()?['transactionType'];
+      final userId = paymentDoc.data()?['userId'];
+      final amount = double.tryParse(withdrawAM.toString()) ?? 0.0;
+
+      // Update payment status to cancelled
+      await FirebaseFirestore.instance
+          .collection('payments')
+          .doc(docId)
+          .update({'status': 'cancelled'});
+
+      // Only refund for WITHDRAW transactions, NOT for DEPOSIT transactions
+      if (transactionType == 'Withdraw') {
+        // For withdraw cancellation, refund the amount to user's cashVault
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .update({
+          'cashVault': FieldValue.increment(amount),
+        });
+        Fluttertoast.showToast(
+          msg: "Withdraw Cancelled. Amount has been refunded to your account",
+          backgroundColor: Colors.green,
+        );
+      } else if (transactionType == 'Deposit') {
+        // For deposit cancellation, DO NOT add amount to cashVault
+        // Just cancel the payment, no refund needed
+        Fluttertoast.showToast(
+          msg: "Deposit Cancelled. No amount will be added to your account",
+          backgroundColor: Colors.orange,
+        );
+      }
 
       final depositController = Get.put(DepositRecordController());
-
       await depositController.fetchPayments();
-      isLoading1.value = false;
-      Fluttertoast.showToast(
-        msg: "Payment Cancelled , Amount has been refunded to your account",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-
-      // 🔄 Data refresh after update
     } catch (e) {
       Fluttertoast.showToast(
-        msg: "Error , Failed to confirm deposit: ${e.toString()}",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-        fontSize: 16.0,
+        msg: "Error cancelling payment: ${e.toString()}",
+        backgroundColor: Colors.red,
       );
-      Get.log("Error confirming deposit: ${e.toString()}");
-
-      isLoading1.value = false;
+      Get.log("Error cancelling payment: ${e.toString()}");
     } finally {
       isLoading1.value = false;
       Get.back();

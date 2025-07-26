@@ -52,37 +52,32 @@ class TransactionDetailScreen extends GetView<TransactionDetailsController> {
                                   .copyWith(
                                       color: AppColors.primaryColor,
                                       fontWeight: FontWeight.bold)),
+                          VerticalDivider(),
                           Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(transaction['accountNumber']!,
-                                    style:
-                                        AppTextStyles.adaptiveText(context, 16)
-                                            .copyWith(
-                                                color: AppColors.primaryColor,
-                                                fontWeight: FontWeight.bold)),
-                                SizedBox(
-                                  width: 8,
-                                ),
-                                InkWell(
-                                    onTap: () {
-                                      Clipboard.setData(ClipboardData(
-                                          text: transaction['accountNumber']));
-
-                                      showToast(
-                                        "Account number copied to clipboard",
-                                      );
-                                    },
-                                    child: Icon(
-                                      Icons.copy,
-                                      size: 18,
-                                      applyTextScaling: true,
-                                      color: AppColors.blackColor,
-                                    ))
-                              ],
-                            ),
+                            child: Text(transaction['accountNumber']!,
+                                style: AppTextStyles.adaptiveText(context, 16)
+                                    .copyWith(
+                                        color: AppColors.primaryColor,
+                                        fontWeight: FontWeight.bold)),
                           ),
+                          SizedBox(
+                            width: 8,
+                          ),
+                          InkWell(
+                              onTap: () {
+                                Clipboard.setData(ClipboardData(
+                                    text: transaction['accountNumber']));
+
+                                showToast(
+                                  "Account number copied to clipboard",
+                                );
+                              },
+                              child: Icon(
+                                Icons.copy,
+                                size: 18,
+                                applyTextScaling: true,
+                                color: AppColors.blackColor,
+                              ))
                         ],
                       ),
                       const SizedBox(height: 15),
@@ -299,25 +294,30 @@ class TransactionDetailScreen extends GetView<TransactionDetailsController> {
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 12, horizontal: 30),
                                           ),
-                                          onPressed: () async {
-                                            transaction['transactionType'] ==
-                                                    "Deposit"
-                                                ? controller.confirmDeposit(
-                                                    userId:
-                                                        transaction["userId"],
-                                                    docId: transaction["id"],
-                                                    amount:
-                                                        transaction["amount"],
-                                                  )
-                                                : await controller
-                                                    .confirmWithdraw(
-                                                    userId:
-                                                        transaction["userId"],
-                                                    docId: transaction["id"],
-                                                    amount:
-                                                        transaction["amount"],
-                                                  );
-                                          },
+                                          onPressed: controller.isLoading.value
+                                              ? null
+                                              : () async {
+                                                  transaction['transactionType'] ==
+                                                          "Deposit"
+                                                      ? controller
+                                                          .confirmDeposit(
+                                                          userId: transaction[
+                                                              "userId"],
+                                                          docId:
+                                                              transaction["id"],
+                                                          amount: transaction[
+                                                              "amount"],
+                                                        )
+                                                      : await controller
+                                                          .confirmWithdraw(
+                                                          userId: transaction[
+                                                              "userId"],
+                                                          docId:
+                                                              transaction["id"],
+                                                          amount: transaction[
+                                                              "amount"],
+                                                        );
+                                                },
                                           child: controller.isLoading.value
                                               ? Center(
                                                   child:
@@ -350,12 +350,15 @@ class TransactionDetailScreen extends GetView<TransactionDetailsController> {
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 12, horizontal: 30),
                                           ),
-                                          onPressed: () async {
-                                            await controller.cancel(
-                                              docId: transaction["id"],
-                                              withdrawAM: transaction["amount"],
-                                            );
-                                          },
+                                          onPressed: controller.isLoading1.value
+                                              ? null
+                                              : () async {
+                                                  await controller.cancel(
+                                                    docId: transaction["id"],
+                                                    withdrawAM:
+                                                        transaction["amount"],
+                                                  );
+                                                },
                                           child: controller.isLoading1.value
                                               ? Center(
                                                   child:

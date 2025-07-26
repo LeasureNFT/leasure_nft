@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'dart:async'; // Added for StreamSubscription
 
 class DepositRecordController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -11,6 +12,9 @@ class DepositRecordController extends GetxController
   var errorMessage = ''.obs;
   var currentTab = 0.obs;
 
+  // Real-time listeners
+  StreamSubscription<QuerySnapshot>? _paymentsSubscription;
+
   void changeTab(int index) {
     currentTab.value = index;
   }
@@ -18,74 +22,103 @@ class DepositRecordController extends GetxController
   @override
   void onInit() {
     super.onInit();
-    fetchPayments();
+    startRealTimeListener();
   }
 
+  @override
+  void onClose() {
+    _paymentsSubscription?.cancel();
+    super.onClose();
+  }
+
+  void startRealTimeListener() {
+    Get.log("[DEPOSIT] [INFO] Starting real-time deposit listener...");
+
+    Timestamp oneMonthAgo = Timestamp.fromDate(
+      DateTime.now().subtract(Duration(days: 30)),
+    );
+
+    _paymentsSubscription = FirebaseFirestore.instance
+        .collection('payments')
+        .where('transactionType', isEqualTo: 'Deposit')
+        .where('createdAt', isGreaterThanOrEqualTo: oneMonthAgo)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+      (querySnapshot) async {
+        Get.log(
+            "[DEPOSIT] [DEBUG] Real-time update received: ${querySnapshot.docs.length} documents");
+
+        try {
+          // Temporary lists
+          List<Map<String, dynamic>> pendingList = [];
+          List<Map<String, dynamic>> completedList = [];
+          List<Map<String, dynamic>> cancelledList = [];
+
+          for (var doc in querySnapshot.docs) {
+            Map<String, dynamic> paymentData =
+                Map<String, dynamic>.from(doc.data());
+            paymentData['id'] = doc.id;
+
+            String userId = paymentData['userId'] ?? '';
+
+            // Fetch user details
+            try {
+              var userDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(userId)
+                  .get();
+              if (userDoc.exists) {
+                paymentData['username'] =
+                    userDoc.data()?['username'] ?? 'Unknown';
+                paymentData['email'] = userDoc.data()?['email'] ?? 'Unknown';
+                paymentData['cashVault'] = double.parse(
+                    userDoc.data()?['cashVault'].toString() ?? "0");
+              } else {
+                paymentData['username'] = 'Unknown';
+                paymentData['email'] = 'Unknown';
+                paymentData['cashVault'] = "0";
+              }
+            } catch (e) {
+              Get.log("[DEPOSIT] [ERROR] Failed to fetch user details: $e");
+              paymentData['username'] = 'Unknown';
+              paymentData['email'] = 'Unknown';
+              paymentData['cashVault'] = "0";
+            }
+
+            // Categorize payments
+            if (paymentData['status'] == 'pending') {
+              pendingList.add(paymentData);
+            } else if (paymentData['status'] == 'completed') {
+              completedList.add(paymentData);
+            } else if (paymentData['status'] == 'cancelled') {
+              cancelledList.add(paymentData);
+            }
+          }
+
+          // Update lists
+          pendingPayments.value = pendingList;
+          completedPayments.value = completedList;
+          cancelledPayments.value = cancelledList;
+
+          Get.log(
+              "[DEPOSIT] [SUCCESS] Real-time update completed - Pending: ${pendingList.length}, Completed: ${completedList.length}, Cancelled: ${cancelledList.length}");
+        } catch (e) {
+          Get.log("[DEPOSIT] [ERROR] Error processing real-time update: $e");
+          errorMessage.value = 'Failed to process updates: ${e.toString()}';
+        }
+      },
+      onError: (error) {
+        Get.log("[DEPOSIT] [ERROR] Real-time listener error: $error");
+        errorMessage.value = 'Real-time connection failed: ${error.toString()}';
+      },
+    );
+  }
+
+  // Legacy function for manual refresh (if needed)
   Future<void> fetchPayments() async {
-    try {
-      isLoading(true);
-      errorMessage.value = '';
-
-      Timestamp oneMonthAgo = Timestamp.fromDate(
-        DateTime.now().subtract(Duration(days: 30)),
-      );
-
-      var querySnapshot = await FirebaseFirestore.instance
-          .collection('payments')
-          .where('transactionType', isEqualTo: 'Deposit')
-          .where('createdAt', isGreaterThanOrEqualTo: oneMonthAgo)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      // ✅ Temporary lists
-      List<Map<String, dynamic>> pendingList = [];
-      List<Map<String, dynamic>> completedList = [];
-      List<Map<String, dynamic>> cancelledList = [];
-
-      for (var doc in querySnapshot.docs) {
-        Map<String, dynamic> paymentData =
-            Map<String, dynamic>.from(doc.data()); // ✅ Correct Type Conversion
-        paymentData['id'] = doc.id; // Add document ID
-
-        String userId = paymentData['userId'] ?? '';
-
-        // 🔥 Fetch user details
-        var userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get();
-        if (userDoc.exists) {
-          paymentData['username'] = userDoc.data()?['username'] ?? 'Unknown';
-          paymentData['email'] = userDoc.data()?['email'] ?? 'Unknown';
-          paymentData['cashVault'] =
-              double.parse(userDoc.data()?['cashVault'].toString() ?? "0");
-        } else {
-          paymentData['username'] = 'Unknown';
-          paymentData['email'] = 'Unknown';
-          paymentData['cashVault'] = "0";
-        }
-
-        // 🔥 Categorize payments
-        if (paymentData['status'] == 'pending') {
-          pendingList.add(paymentData);
-        } else if (paymentData['status'] == 'completed') {
-          completedList.add(paymentData);
-        } else if (paymentData['status'] == 'cancelled') {
-          cancelledList.add(paymentData);
-        }
-      }
-
-      // ✅ Correct way to update RxList
-      pendingPayments.value = pendingList;
-      completedPayments.value = completedList;
-      cancelledPayments.value = cancelledList;
-
-      await deleteOldPayments(oneMonthAgo);
-    } catch (e) {
-      errorMessage.value = 'Failed to fetch payments: ${e.toString()}';
-    } finally {
-      isLoading(false);
-    }
+    Get.log("[DEPOSIT] [INFO] Manual refresh requested");
+    startRealTimeListener();
   }
 
   Future<void> deleteOldPayments(Timestamp oneMonthAgo) async {

@@ -31,34 +31,47 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  # Core UI
   cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
-  # youtube_player_iframe: ^5.2.1
   get: ^4.6.6
+  google_fonts: ^6.2.1  # Added back - still used in code
+  
+  # Firebase (keep only what you need)
   firebase_auth: ^5.3.4
   cloud_firestore: ^5.6.0
   firebase_core: ^3.9.0
   firebase_storage: ^12.3.7
-  fluttertoast: ^8.2.10
-  uuid: ^4.5.1
-  image: ^4.1.3
-  image_picker: ^1.1.1
-  flutter_image_compress: ^2.4.0
-  url_launcher: ^6.3.1
+  
+  # UI Components (optimized)
   flutter_screenutil: ^5.9.3
-  intl: ^0.20.2
-  # youtube_player_flutter: ^9.1.1
-  flutter_rating_bar: ^4.0.1
-  app_links: ^6.4.0
-  get_storage: ^2.1.1
-  flutter_simple_treeview: ^3.0.2
-  device_info_plus: ^11.3.0
   dropdown_search: ^5.0.6
+  
+  # Image handling (lighter alternatives)
+  image_picker: ^1.1.1
+  image: ^4.1.3  # Added back - still used in code
+  flutter_image_compress: ^2.4.0  # Added back - might be needed
+  
+  # Utilities
+  uuid: ^4.1.0
+  intl: ^0.20.2
+  device_info_plus: ^11.3.0
+  get_storage: ^2.1.1
+  
+  # Web support (only if needed)
   universal_html: ^2.2.4
+  
+  # Notifications
+  fluttertoast: ^8.2.10
+  
+  # External links
+  url_launcher: ^6.3.1
+  app_links: ^6.4.0
+  
+  # Email (only if needed)
   mailer: ^6.0.0
   
+  # Rating (only if needed)
+  flutter_rating_bar: ^4.0.1
 
 dev_dependencies:
   flutter_test:

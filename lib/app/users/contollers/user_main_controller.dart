@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:leasure_nft/app/users/models/user_model.dart';
+import 'package:leasure_nft/app/auth_controllers/login_controller.dart';
 
 enum DashboardTab { home, deposit, task, withdraw, network, profile }
 
@@ -26,6 +27,9 @@ class UserDashboardController extends GetxController {
   void onInit() {
     super.onInit();
 
+    // Check if user is banned before initializing dashboard
+    checkUserBanStatus();
+
     pageController = PageController(initialPage: currentIndex.value);
     if (pageController.hasClients) {
       pageController.jumpToPage(currentIndex.value);
@@ -45,6 +49,49 @@ class UserDashboardController extends GetxController {
     updateReferralProfit();
 
     isloading.value = false;
+  }
+
+  void checkUserBanStatus() async {
+    try {
+      String? userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        Get.log("[DASHBOARD] [ERROR] No user logged in, redirecting to login");
+        Get.offAllNamed('/login');
+        return;
+      }
+
+      // Check global banned flag first
+      if (LoginController.isUserBanned) {
+        Get.log(
+            "[DASHBOARD] [ERROR] Global banned flag is true, redirecting to login");
+        Get.offAllNamed('/login');
+        return;
+      }
+
+      // Double-check with Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>?;
+        final isBanned = data?['isUserBanned'] ?? false;
+
+        if (isBanned == true || isBanned == 'true' || isBanned == 1) {
+          Get.log(
+              "[DASHBOARD] [ERROR] User is banned in Firestore, redirecting to login");
+          await FirebaseAuth.instance.signOut();
+          Get.offAllNamed('/login');
+          return;
+        }
+      }
+
+      Get.log("[DASHBOARD] [SUCCESS] User ban check passed");
+    } catch (e) {
+      Get.log("[DASHBOARD] [ERROR] Error checking user ban status: $e");
+      Get.offAllNamed('/login');
+    }
   }
 
   void getTotalRefferral() async {
@@ -104,21 +151,20 @@ class UserDashboardController extends GetxController {
       print("✅ Real-time Pending Amount: Rs $totalAmount");
     });
     FirebaseFirestore.instance
-      .collection('payments')
-      .where('userId', isEqualTo: userId)
-      .where('transactionType', isEqualTo: 'Withdraw')
-      .where('status', isEqualTo: 'pending')
-      .snapshots()
-      .listen((querySnapshot) {
-    double totalWithdraw = querySnapshot.docs.fold(0.0, (sum, doc) {
-      return sum + double.tryParse(doc['amount'].toString())!;
-    });
+        .collection('payments')
+        .where('userId', isEqualTo: userId)
+        .where('transactionType', isEqualTo: 'Withdraw')
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .listen((querySnapshot) {
+      double totalWithdraw = querySnapshot.docs.fold(0.0, (sum, doc) {
+        return sum + double.tryParse(doc['amount'].toString())!;
+      });
 
-    pendingWithdraw.value = totalWithdraw;
-    print("📤 Real-time Pending Withdraw Amount: Rs $totalWithdraw");
-  });
+      pendingWithdraw.value = totalWithdraw;
+      print("📤 Real-time Pending Withdraw Amount: Rs $totalWithdraw");
+    });
   }
-  
 
   Future<void> updateReferralProfit() async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
