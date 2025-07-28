@@ -8,126 +8,146 @@ import 'package:leasure_nft/app/users/screens/records/user_deposit_records.dart'
 import 'package:leasure_nft/app/admin//screens/transaction_detail_screen.dart';
 import 'package:leasure_nft/app/admin//screens/withdraw/controller/withdraw_record_controller.dart';
 
-class WithdrawRecords extends GetView<WithdrawRecordController> {
+class WithdrawRecords extends StatelessWidget {
   const WithdrawRecords({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<WithdrawRecordController>(
-        init: WithdrawRecordController(),
-        builder: (controller) => Scaffold(
-              body: SafeArea(
-                child: Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 15.w, vertical: 15.h),
-                  child: Column(
-                    children: [
-                      Header(
-                          title: "Withdraw",
+    // Initialize controller
+    final controller = Get.put(WithdrawRecordController());
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 15.h),
+          child: Column(
+            children: [
+              Header(
+                  title: "Withdraw",
+                  ontap: () {
+                    Get.back();
+                  }),
+              SizedBox(height: 15.h),
+              Obx(() => Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.blackColor200,
+                      borderRadius: BorderRadius.circular(15.r),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        swapButton(
+                          buttonColor: controller.currentTab.value == 0
+                              ? AppColors.accentColor
+                              : AppColors.transparentColor,
+                          context: context,
                           ontap: () {
-                            Get.back();
-                          }),
-                      SizedBox(
-                        height: 15.h,
-                      ),
-                      Obx(
-                        () => Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 10.w, vertical: 10.h),
-                          decoration: BoxDecoration(
-                            color: AppColors.blackColor200,
-                            borderRadius: BorderRadius.circular(15.r),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              swapButton(
-                                buttonColor: controller.currentTab.value == 0
-                                    ? AppColors.accentColor
-                                    : AppColors.transparentColor,
-                                context: context,
-                                ontap: () {
-                                  controller.changeTab(0);
-                                },
-                                text: "Pending",
-                                textColor: controller.currentTab.value == 0
-                                    ? AppColors.whiteColor
-                                    : AppColors.blackColor,
-                              ),
-                              swapButton(
-                                buttonColor: controller.currentTab.value == 1
-                                    ? AppColors.accentColor
-                                    : AppColors.transparentColor,
-                                context: context,
-                                ontap: () {
-                                  controller.changeTab(1);
-                                },
-                                text: "Completed",
-                                textColor: controller.currentTab.value == 1
-                                    ? AppColors.whiteColor
-                                    : AppColors.blackColor,
-                              ),
-                              swapButton(
-                                buttonColor: controller.currentTab.value == 2
-                                    ? AppColors.accentColor
-                                    : AppColors.transparentColor,
-                                context: context,
-                                ontap: () {
-                                  controller.changeTab(2);
-                                },
-                                text: "Cancelled",
-                                textColor: controller.currentTab.value == 2
-                                    ? AppColors.whiteColor
-                                    : AppColors.blackColor,
-                              ),
-                            ],
-                          ),
+                            controller.changeTab(0);
+                          },
+                          text: "Pending",
+                          textColor: controller.currentTab.value == 0
+                              ? AppColors.whiteColor
+                              : AppColors.blackColor,
                         ),
-                      ),
-                      SizedBox(
-                        height: 20.h,
-                      ),
-                      Expanded(
-                        child: Obx(() {
-                          if (controller.isLoading.value) {
-                            return Center(
-                                child:
-                                    CircularProgressIndicator()); // 🔄 Loading state
-                          }
+                        swapButton(
+                          buttonColor: controller.currentTab.value == 1
+                              ? AppColors.accentColor
+                              : AppColors.transparentColor,
+                          context: context,
+                          ontap: () {
+                            controller.changeTab(1);
+                          },
+                          text: "Completed",
+                          textColor: controller.currentTab.value == 1
+                              ? AppColors.whiteColor
+                              : AppColors.blackColor,
+                        ),
+                        swapButton(
+                          buttonColor: controller.currentTab.value == 2
+                              ? AppColors.accentColor
+                              : AppColors.transparentColor,
+                          context: context,
+                          ontap: () {
+                            controller.changeTab(2);
+                          },
+                          text: "Cancelled",
+                          textColor: controller.currentTab.value == 2
+                              ? AppColors.whiteColor
+                              : AppColors.blackColor,
+                        ),
+                      ],
+                    ),
+                  )),
+              SizedBox(height: 20.h),
+              Expanded(
+                child: Obx(() {
+                  if (controller.isLoading.value) {
+                    return Center(
+                        child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 10.h),
+                        Text("Loading withdrawals...",
+                            style: AppTextStyles.adaptiveText(context, 14)),
+                      ],
+                    ));
+                  }
 
-                          if (controller.errorMessage.isNotEmpty) {
-                            return Center(
-                                child: Text(controller.errorMessage.value,
-                                    style: TextStyle(
-                                        color: Colors.red))); // ❌ Error state
-                          }
+                  if (controller.errorMessage.isNotEmpty) {
+                    return Center(
+                        child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error, color: Colors.red, size: 50),
+                        SizedBox(height: 10.h),
+                        Text(
+                          controller.errorMessage.value,
+                          style: TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 10.h),
+                        ElevatedButton(
+                          onPressed: () => controller.fetchPayments(),
+                          child: Text("Retry"),
+                        ),
+                      ],
+                    ));
+                  }
 
-                          return controller.currentTab.value == 0
-                              ? _buildPaymentList(controller.pendingPayments,
-                                  "No Pending Withdraw", context)
-                              : controller.currentTab.value == 1
-                                  ? _buildPaymentList(
-                                      controller.completedPayments,
-                                      "No Completed Withdraw",
-                                      context)
-                                  : _buildPaymentList(
-                                      controller.cancelledPayments,
-                                      "No Cancelled Withdraw",
-                                      context);
-                        }),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ));
+                  return controller.currentTab.value == 0
+                      ? _buildPaymentList(controller.pendingPayments,
+                          "No Pending Withdrawals", context)
+                      : controller.currentTab.value == 1
+                          ? _buildPaymentList(controller.completedPayments,
+                              "No Completed Withdrawals", context)
+                          : _buildPaymentList(controller.cancelledPayments,
+                              "No Cancelled Withdrawals", context);
+                }),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildPaymentList(List payments, String emptyMessage, context) {
     return payments.isEmpty
         ? Center(
-            child: Text(emptyMessage,
-                style: AppTextStyles.adaptiveText(context, 15)
-                    .copyWith(color: AppColors.blackColor300)))
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.inbox, size: 50, color: AppColors.blackColor300),
+                SizedBox(height: 10.h),
+                Text(emptyMessage,
+                    style: AppTextStyles.adaptiveText(context, 15)
+                        .copyWith(color: AppColors.blackColor300)),
+              ],
+            ),
+          )
         : ListView.builder(
             itemCount: payments.length,
             itemBuilder: (context, index) {
@@ -174,16 +194,7 @@ class WithdrawRecords extends GetView<WithdrawRecordController> {
                                 ? AppColors.primaryColor
                                 : payment['status'] == "completed"
                                     ? AppColors.accentColor
-                                    : Colors.red)
-
-                        // TextStyle(
-                        //     color: payment['status'] == "pending"
-                        //         ? Colors.blue
-                        //         : payment['status'] == "completed"
-                        //             ? Colors.green
-                        //             : Colors.red,
-                        //     fontSize: 14.sp)
-                        ),
+                                    : Colors.red)),
                   ),
                 ),
               );

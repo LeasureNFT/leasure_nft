@@ -17,6 +17,7 @@ class DashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    Get.log("[DASHBOARD] [INFO] DashboardController initialized");
     getUsers();
     calculateTotalRevenue(); // ✅ Automatically fetch users on screen load
   }
@@ -35,11 +36,12 @@ class DashboardController extends GetxController {
   // 🔹 Firestore سے تمام Users حاصل کرنے کا Function
   void getUsers() {
     try {
+      Get.log("[DASHBOARD] [INFO] Fetching users...");
       isLoading.value = true;
       _usersSubscription?.cancel();
       _usersSubscription = FirebaseFirestore.instance
           .collection('users')
-           // Limit to 50 users for efficiency; adjust as needed
+          // Limit to 50 users for efficiency; adjust as needed
           .snapshots()
           .listen((snapshot) {
         final updatedUsers = snapshot.docs.map((doc) => doc.data()).toList();
@@ -53,12 +55,17 @@ class DashboardController extends GetxController {
         // ✅ Count Banned Users (isUserBanned == true)
         totalBannedUsers.value =
             updatedUsers.where((user) => user['isUserBanned'] == true).length;
+
+        Get.log(
+            "[DASHBOARD] [SUCCESS] Users loaded - Total: ${totalUsers.value}, Banned: ${totalBannedUsers.value}");
         isLoading.value = false;
       }, onError: (e) {
+        Get.log("[DASHBOARD] [ERROR] Failed to fetch users: $e");
         isLoading.value = false;
         Get.snackbar("Error", "Failed to fetch users: $e");
       });
     } catch (e) {
+      Get.log("[DASHBOARD] [ERROR] Exception in getUsers: $e");
       isLoading.value = false;
       Get.snackbar("Error", "Failed to fetch users: $e");
     }
@@ -66,44 +73,87 @@ class DashboardController extends GetxController {
 
   Future<void> calculateTotalRevenue() async {
     try {
+      Get.log(
+          "[DASHBOARD] [INFO] Calculating net revenue (deposits - withdrawals)...");
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
       // 1️⃣ Get total number of users
       QuerySnapshot usersSnapshot = await firestore.collection('users').get();
-      int totalUsers = usersSnapshot.size;
+      int totalUsersCount = usersSnapshot.size;
+      Get.log("[DASHBOARD] [DEBUG] Total users: $totalUsersCount");
 
-      // 2️⃣ Get total tasks assigned to each user
-      QuerySnapshot tasksSnapshot = await firestore.collection('tasks').get();
-      int tasksPerUser =
-          tasksSnapshot.size; // Assuming all users get equal tasks
+      // 2️⃣ Calculate total deposits (completed)
+      double totalDeposits = 0.0;
+      QuerySnapshot depositsSnapshot = await firestore
+          .collection('payments')
+          .where('transactionType', isEqualTo: 'Deposit')
+          .where('status', isEqualTo: 'completed')
+          .get();
 
-      // 3️⃣ Calculate total profit from task_details
-      QuerySnapshot taskDetailsSnapshot =
-          await firestore.collection('task_details').get();
+      for (var doc in depositsSnapshot.docs) {
+        Map<String, dynamic> paymentData =
+            Map<String, dynamic>.from(doc.data() as Map);
+        double amount = 0.0;
+        final amountRaw = paymentData['amount'];
 
-      double totalProfit = 0.0;
-
-      for (var doc in taskDetailsSnapshot.docs) {
-        double profit = 0.0;
-        final profitRaw = doc['profit'];
-        if (profitRaw is int) {
-          profit = double.parse(profitRaw.toString());
-        } else if (profitRaw is double) {
-          profit = profitRaw;
-        } else if (profitRaw is String) {
-          profit = double.tryParse(profitRaw) ?? 0.0;
+        if (amountRaw is int) {
+          amount = amountRaw.toDouble();
+        } else if (amountRaw is double) {
+          amount = amountRaw;
+        } else if (amountRaw is String) {
+          amount = double.tryParse(amountRaw) ?? 0.0;
         }
-        totalProfit += profit;
+        totalDeposits += amount;
+        Get.log(
+            "[DASHBOARD] [DEBUG] Deposit ${doc.id}: amount=$amount, total=$totalDeposits");
       }
 
-      // 4️⃣ Calculate Total Revenue Formula
-      double totalRevenueAm =
-          totalUsers * tasksPerUser * (totalProfit / taskDetailsSnapshot.size);
+      // 3️⃣ Calculate total withdrawals (completed)
+      double totalWithdrawals = 0.0;
+      QuerySnapshot withdrawalsSnapshot = await firestore
+          .collection('payments')
+          .where('transactionType', isEqualTo: 'Withdraw')
+          .where('status', isEqualTo: 'completed')
+          .get();
 
-      print("Total Revenue: $totalRevenueAm");
-      totalRevenue.value = totalRevenueAm;
+      for (var doc in withdrawalsSnapshot.docs) {
+        Map<String, dynamic> paymentData =
+            Map<String, dynamic>.from(doc.data() as Map);
+        double amount = 0.0;
+        final amountRaw = paymentData['amount'];
+
+        if (amountRaw is int) {
+          amount = amountRaw.toDouble();
+        } else if (amountRaw is double) {
+          amount = amountRaw;
+        } else if (amountRaw is String) {
+          amount = double.tryParse(amountRaw) ?? 0.0;
+        }
+        totalWithdrawals += amount;
+        Get.log(
+            "[DASHBOARD] [DEBUG] Withdrawal ${doc.id}: amount=$amount, total=$totalWithdrawals");
+      }
+
+      // 4️⃣ Calculate NET REVENUE (Deposits - Withdrawals)
+      double netRevenue = totalDeposits - totalWithdrawals;
+
+      Get.log("[DASHBOARD] [DEBUG] Revenue breakdown:");
+      Get.log(
+          "[DASHBOARD] [DEBUG] - Total completed deposits: ${depositsSnapshot.size}");
+      Get.log("[DASHBOARD] [DEBUG] - Total deposits amount: Rs.$totalDeposits");
+      Get.log(
+          "[DASHBOARD] [DEBUG] - Total completed withdrawals: ${withdrawalsSnapshot.size}");
+      Get.log(
+          "[DASHBOARD] [DEBUG] - Total withdrawals amount: Rs.$totalWithdrawals");
+      Get.log(
+          "[DASHBOARD] [DEBUG] - NET REVENUE: Rs.$netRevenue (Deposits - Withdrawals)");
+
+      // Set the net revenue
+      Get.log("[DASHBOARD] [SUCCESS] Net revenue calculated: Rs.$netRevenue");
+      totalRevenue.value = netRevenue;
     } catch (e) {
-      print("Error calculating total revenue: $e");
+      Get.log("[DASHBOARD] [ERROR] Error calculating net revenue: $e");
+      totalRevenue.value = 0.0;
     }
   }
 }
