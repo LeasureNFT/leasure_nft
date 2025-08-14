@@ -10,6 +10,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:leasure_nft/app/core/assets/constant.dart';
 
 class DepositController extends GetxController {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -112,6 +113,19 @@ class DepositController extends GetxController {
     try {
       isloading.value = true;
       final userId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Validate minimum deposit amount
+      final depositAmount =
+          double.tryParse(amountController.text.trim()) ?? 0.0;
+      if (depositAmount < MINIMUM_DEPOSIT_AMOUNT) {
+        Fluttertoast.showToast(
+          msg: MIN_DEPOSIT_MESSAGE,
+          backgroundColor: Colors.red,
+        );
+        isloading.value = false;
+        return;
+      }
+
       // Ban check
       final userDoc = await FirebaseFirestore.instance
           .collection('users')

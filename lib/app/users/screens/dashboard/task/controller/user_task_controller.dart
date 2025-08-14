@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:leasure_nft/app/core/utils/cache_manager.dart';
+import 'package:leasure_nft/app/core/assets/constant.dart';
 
 class UserTaskController extends GetxController with WidgetsBindingObserver {
   RxBool isLoading = false.obs;
@@ -186,13 +187,11 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
       // Get cashVault value (default to 0 if null)
       double cashVault = double.parse(userDoc['cashVault'].toString());
 
-      // Check if cashVault is below 500
-      if (cashVault < 500) {
-        errorMsg.value =
-            "Your balance is too low. Please deposit at least 500 to access tasks.";
+      // Check if cashVault is below minimum balance
+      if (cashVault < MINIMUM_BALANCE_FOR_TASKS) {
+        errorMsg.value = LOW_BALANCE_TASK_MESSAGE;
 
-        throw Exception(
-            "Your balance is too low. Please deposit at least 500 to access tasks.");
+        throw Exception(LOW_BALANCE_TASK_MESSAGE);
       }
 
       // Fetch tasks if cashVault is 500 or more

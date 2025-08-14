@@ -11,6 +11,8 @@ import 'package:leasure_nft/app/core/widgets/header.dart';
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/users/contollers/user_main_controller.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/withdraw/controller/user_withdraw_controller.dart';
+import 'package:leasure_nft/app/core/assets/constant.dart';
+import 'package:leasure_nft/app/core/widgets/minimum_amount_info.dart';
 
 class WithdrawalScreen extends GetView<UserWithdrawController> {
   //
@@ -42,18 +44,19 @@ class WithdrawalScreen extends GetView<UserWithdrawController> {
                         }),
                     SizedBox(height: 20.h),
 
-                    Obx(
-                      () => Text(
-                        'Balance : ${controller.cashVault.value.toStringAsFixed(4)}',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18.sp,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20.h),
+                    Obx(() => BalanceInfoCard(
+                          currentBalance: controller.cashVault.value,
+                          transactionType: 'withdraw',
+                        )),
 
+                    SizedBox(height: 16.h),
+
+                    // Minimum amount info
+                    MinimumAmountInfo(
+                      transactionType: 'withdraw',
+                      backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+                    ),
+                    SizedBox(height: 16.h),
                     // Payment Method Dropdown
                     Obx(() => ClipRRect(
                           borderRadius:
@@ -151,11 +154,17 @@ class WithdrawalScreen extends GetView<UserWithdrawController> {
 
                     SizedBox(height: 16.h),
 
+                    // Balance info card
+
                     // Amount Field
                     CustomTextField(
                       validator: (v) {
                         if (v!.isEmpty) {
                           return 'Please enter amount';
+                        }
+                        final amount = double.tryParse(v) ?? 0.0;
+                        if (amount < MINIMUM_WITHDRAW_AMOUNT) {
+                          return MIN_WITHDRAW_MESSAGE;
                         }
                         return null;
                       },

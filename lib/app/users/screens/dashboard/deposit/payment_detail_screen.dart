@@ -11,6 +11,8 @@ import 'package:leasure_nft/app/core/widgets/custom_text_field.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/deposit/controller/deposit_controller.dart';
+import 'package:leasure_nft/app/core/assets/constant.dart';
+import 'package:leasure_nft/app/core/widgets/minimum_amount_info.dart';
 
 class PaymentDetailScreen extends StatelessWidget {
   final QueryDocumentSnapshot payment;
@@ -197,11 +199,19 @@ class PaymentDetailScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 20.h),
+
+                  // Minimum amount info
+                  MinimumAmountInfo(
+                    transactionType: 'deposit',
+                    backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+                  ),
+
+                  SizedBox(height: 16.h),
+
                   CustomTextField(
                     hintText: "Enter Amount",
                     prefixIcon: Icons.request_page,
-                    inputFormatter: [
-                      FilteringTextInputFormatter.digitsOnly,
+                    inputFormatter: [                  FilteringTextInputFormatter.digitsOnly,
                     ],
                     controller: controller.amountController,
                     onChanged: (v) {
@@ -210,6 +220,10 @@ class PaymentDetailScreen extends StatelessWidget {
                     validator: (value) {
                       if (value!.isEmpty) {
                         return 'Amount is required';
+                      }
+                      final amount = double.tryParse(value) ?? 0.0;
+                      if (amount < MINIMUM_DEPOSIT_AMOUNT) {
+                        return MIN_DEPOSIT_MESSAGE;
                       }
                       return null;
                     },
@@ -285,13 +299,14 @@ class PaymentDetailScreen extends StatelessWidget {
                           if (formkey.currentState!.validate()) {
                             if (controller.isloading.value) {
                               showToast("Please wait, processing...");
-                            }else{
-                            controller.submitPayment(
-                                acName: payment['accountName'],
-                                acNumber: payment['accountNumber'],
-                                holdername: payment["bankName"],
-                                paymentmethod: payment['accountName']);
-                          }}
+                            } else {
+                              controller.submitPayment(
+                                  acName: payment['accountName'],
+                                  acNumber: payment['accountNumber'],
+                                  holdername: payment["bankName"],
+                                  paymentmethod: payment['accountName']);
+                            }
+                          }
                         },
                         loading: controller.isloading.value,
                         text: "Submit"),

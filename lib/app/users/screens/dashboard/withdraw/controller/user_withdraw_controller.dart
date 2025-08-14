@@ -8,6 +8,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:leasure_nft/app/core/widgets/loading.dart';
 import 'package:leasure_nft/app/core/widgets/toas_message.dart';
+import 'package:leasure_nft/app/core/assets/constant.dart';
 
 class UserWithdrawController extends GetxController {
   final TextEditingController amountController = TextEditingController();
@@ -109,6 +110,15 @@ class UserWithdrawController extends GetxController {
 
         return;
       }
+
+      // Validate minimum withdraw amount
+      final withdrawAmount =
+          double.tryParse(amountController.text.trim()) ?? 0.0;
+      if (withdrawAmount < MINIMUM_WITHDRAW_AMOUNT) {
+        showToast(MIN_WITHDRAW_MESSAGE, isError: true);
+        return;
+      }
+
       isloading.value = true;
 
       final user_id = FirebaseAuth.instance.currentUser!.uid;
@@ -126,15 +136,25 @@ class UserWithdrawController extends GetxController {
         return;
       }
 
-      if (cashVault.value < 500) {
+      if (cashVault.value < MINIMUM_BALANCE_FOR_TASKS) {
         CustomLoading.hide();
-        showToast("Your Balance is less than 500", isError: true);
+        showToast(
+            "Your Balance is less than ${MINIMUM_BALANCE_FOR_TASKS.toInt()}",
+            isError: true);
 
         isloading.value = false;
         return;
       }
-      final withdrawAmount =
-          double.tryParse(amountController.text.trim()) ?? 0.0;
+
+      // Check if user has enough balance for the withdraw amount
+      if (cashVault.value < withdrawAmount) {
+        showToast(
+            INSUFFICIENT_BALANCE_MESSAGE.replaceAll(
+                '{amount}', cashVault.value.toString()),
+            isError: true);
+        isloading.value = false;
+        return;
+      }
       await FirebaseFirestore.instance.collection('users').doc(user_id).update({
         "cashVault": FieldValue.increment(-withdrawAmount),
       });
