@@ -11,11 +11,17 @@ import 'package:leasure_nft/app/routes/app_routes.dart';
 import 'package:leasure_nft/app/services/initial_setting_services.dart';
 import 'package:leasure_nft/firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:universal_html/html.dart' as html;
 
 Future<void> _initServices() async {
   Get.log("Initial Servicess Starting ..... ");
   await GetStorage.init();
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Clear cache on startup
+  await _clearCacheOnStartup();
+
   // WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   // FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Get.putAsync(() => InitialSettingServices().init());
@@ -32,6 +38,40 @@ Future<void> _initServices() async {
   }
 
   Get.log("Initial Servicess Started!");
+}
+
+Future<void> _clearCacheOnStartup() async {
+  try {
+    if (kIsWeb) {
+      // Clear web cache
+      if (html.window.localStorage.isNotEmpty) {
+        // Keep only essential data, clear rest
+        final deviceId = html.window.localStorage['deviceId'];
+        html.window.localStorage.clear();
+        if (deviceId != null) {
+          html.window.localStorage['deviceId'] = deviceId;
+        }
+      }
+
+      // Clear session storage
+      html.window.sessionStorage.clear();
+
+      Get.log("✅ Web cache cleared on startup");
+    }
+
+    // Clear GetStorage cache for old data
+    final storage = GetStorage();
+    final keys = storage.getKeys();
+    for (String key in keys) {
+      if (key.contains('completedTasks') || key.contains('cashValue')) {
+        storage.remove(key);
+      }
+    }
+
+    Get.log("✅ App cache cleared on startup");
+  } catch (e) {
+    Get.log("❌ Error clearing cache: $e");
+  }
 }
 
 void main() async {

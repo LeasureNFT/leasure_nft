@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:leasure_nft/app/core/utils/cache_manager.dart';
 
 class UserTaskController extends GetxController with WidgetsBindingObserver {
   RxBool isLoading = false.obs;
@@ -62,12 +63,16 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
       // New day, reset the tasks
       completedTasks.value = List.generate(taskList.length, (index) => false);
 
-      box.remove('completedTasks_$uid');
-      box.remove('cashValue');
+      // Clear old cache data
+      await CacheManager.clearTaskCache();
 
       box.write('completedTasks_$uid', completedTasks.value);
       box.write("cashValue_$uid", 0);
       box.write('lastResetDate', currentDate);
+
+      // Update cache timestamp
+      CacheManager.updateCacheTimestamp('tasks_$uid');
+
       try {
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
           'todayProfit': 0.0,
