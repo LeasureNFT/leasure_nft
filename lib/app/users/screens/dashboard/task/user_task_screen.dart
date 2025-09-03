@@ -43,30 +43,10 @@ class UserTaskScreen extends GetView<UserTaskController> {
                               color: AppColors.primaryColor,
                             ),
                           )
-                        : controller.taskList.isEmpty
-                            ? controller.errorMsg.value.isNotEmpty
-                                ? Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.warning_amber_rounded,
-                                        size: 80,
-                                        color: Colors.red,
-                                      ),
-                                      SizedBox(
-                                        height: 10.h,
-                                      ),
-                                      Text(
-                                          textAlign: TextAlign.center,
-                                          controller.errorMsg.value,
-                                          style: AppTextStyles.adaptiveText(
-                                                  context, 25)
-                                              .copyWith(color: Colors.red)),
-                                    ],
-                                  )
-                                : Center(
+                        : controller.errorMsg.value.isNotEmpty
+                            ? _buildBalanceWarning(context, controller.errorMsg.value)
+                            : controller.taskList.isEmpty
+                                ? Center(
                                     child: Text(
                                       "No Task Found!",
                                       style: AppTextStyles.adaptiveText(
@@ -75,7 +55,7 @@ class UserTaskScreen extends GetView<UserTaskController> {
                                               color: AppColors.blackColor300),
                                     ),
                                   )
-                            : ListView.builder(
+                                : ListView.builder(
                                 itemCount: controller.taskList.length,
                                 itemBuilder: (context, index) {
                                   return GestureDetector(
@@ -167,5 +147,97 @@ class UserTaskScreen extends GetView<UserTaskController> {
             ),
           )));
         });
+  }
+
+  Widget _buildBalanceWarning(BuildContext context, String errorMessage) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: EdgeInsets.all(20.w),
+          margin: EdgeInsets.symmetric(horizontal: 20.w),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.account_balance_wallet,
+                size: 80,
+                color: Colors.red,
+              ),
+              SizedBox(height: 20.h),
+              Text(
+                "Insufficient Balance",
+                style: AppTextStyles.adaptiveText(context, 24)
+                    .copyWith(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 15.h),
+              Text(
+                errorMessage,
+                style: AppTextStyles.adaptiveText(context, 16)
+                    .copyWith(
+                  color: AppColors.blackColor,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 25.h),
+              Container(
+                padding: EdgeInsets.all(15.w),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.primaryColor.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      "To access daily tasks, you need:",
+                      style: AppTextStyles.adaptiveText(context, 14)
+                          .copyWith(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      "Minimum Balance: 500 PKR",
+                      style: AppTextStyles.adaptiveText(context, 16)
+                          .copyWith(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20.h),
+              CustomButton(
+                onPressed: () {
+                  // Navigate to deposit screen
+                  final controller1 = Get.put(UserDashboardController());
+                  controller1.changePage(DashboardTab.deposit.index);
+                },
+                text: "Deposit Now",
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

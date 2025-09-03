@@ -28,11 +28,26 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
   void onInit() async {
     super.onInit();
     WidgetsBinding.instance.addObserver(this); // Listen to app lifecycle
-    await checkAndResetTasks();
-    await loadCompletedTasks();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await getTasks();
-    });
+
+    // First get tasks to check balance
+    await getTasks();
+
+    // Always initialize completedTasks list for proper length
+    if (taskList.isNotEmpty) {
+      // Initialize completedTasks with correct length
+      if (completedTasks.isEmpty) {
+        completedTasks.value = List.generate(taskList.length, (index) => false);
+      }
+
+      // Then check and reset tasks
+      await checkAndResetTasks();
+
+      // Load completed tasks
+      await loadCompletedTasks();
+
+      // Debug storage contents
+      debugStorageContents();
+    }
   }
 
   @override
@@ -44,15 +59,31 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
+      Get.log("🔄 App resumed - checking task status...");
+
+      // Ensure taskList is initialized
+      if (taskList.isEmpty) {
+        taskList.value = taskPool;
+      }
+
       await checkAndResetTasks();
       await loadCompletedTasks();
       await getTasks();
+
+      Get.log("✅ Task status refreshed after app resume");
     }
   }
 
   Future<void> checkAndResetTasks() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+
+    // Don't proceed if no tasks available (insufficient balance)
+    if (taskList.isEmpty) {
+      Get.log(
+          "⚠️ Skipping task reset - no tasks available (insufficient balance)");
+      return;
+    }
 
     String uid = user.uid;
     final box = GetStorage();
@@ -83,6 +114,13 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
       } catch (e) {
         Get.log("❌ Failed to reset todayProfit: $e");
       }
+    } else {
+      // Same day - ensure completedTasks has correct length
+      if (completedTasks.length != taskList.length) {
+        completedTasks.value = List.generate(taskList.length, (index) => false);
+        // Load existing completed tasks from storage
+        await loadCompletedTasks();
+      }
     }
   }
 
@@ -91,14 +129,45 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // Don't proceed if no tasks available (insufficient balance)
+    if (taskList.isEmpty) {
+      Get.log(
+          "⚠️ Skipping load completed tasks - no tasks available (insufficient balance)");
+      return;
+    }
+
     String uid = user.uid;
+    Get.log("🔄 Loading completed tasks for user $uid...");
+
     // Load the saved completedTasks list from GetStorage
     var savedTasks = box.read('completedTasks_$uid');
+    Get.log("📦 Raw saved tasks from storage: $savedTasks");
 
     if (savedTasks != null && savedTasks is List) {
-      // Ensure the saved list is a List<bool>
-      completedTasks.value = List<bool>.from(savedTasks);
+      // Ensure the saved list is a List<bool> and has correct length
+      List<bool> savedList = List<bool>.from(savedTasks);
+      Get.log(
+          "📋 Converted saved list: $savedList (length: ${savedList.length})");
+
+      if (savedList.length == taskList.length) {
+        completedTasks.value = savedList;
+        Get.log(
+            "✅ Loaded ${savedList.where((task) => task).length} completed tasks from storage");
+      } else {
+        // Length mismatch - initialize with correct length
+        completedTasks.value = List.generate(taskList.length, (index) => false);
+        Get.log(
+            "⚠️ Task count mismatch, reinitialized completedTasks. Expected: ${taskList.length}, Got: ${savedList.length}");
+      }
+    } else {
+      // No saved tasks - initialize with correct length
+      completedTasks.value = List.generate(taskList.length, (index) => false);
+      Get.log(
+          "ℹ️ No saved tasks found, initialized completedTasks with length ${taskList.length}");
     }
+
+    Get.log(
+        "📊 Final completedTasks status: ${completedTasks.where((task) => task).length}/${completedTasks.length} completed");
   }
 
   void saveCompletedTasks() {
@@ -109,10 +178,60 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     String uid = user.uid;
 
     box.write('completedTasks_$uid', completedTasks.value);
+
+    // Debug logging
+    int completedCount = completedTasks.where((task) => task).length;
+    Get.log(
+        "💾 Saved ${completedCount}/${completedTasks.length} completed tasks for user $uid");
   }
 
   void updateRating(double newRating) {
     rating.value = newRating;
+  }
+
+  /// Check if user can access tasks based on balance
+  bool canAccessTasks() {
+    return taskList.isNotEmpty;
+  }
+
+  /// Get current user balance
+  double getCurrentBalance() {
+    // This should be updated when user balance changes
+    // For now, we'll rely on the error message from getTasks()
+    return 0.0;
+  }
+
+  /// Force refresh completed tasks from storage
+  Future<void> refreshCompletedTasks() async {
+    Get.log("🔄 Force refreshing completed tasks from storage...");
+    await loadCompletedTasks();
+    Get.log(
+        "✅ Completed tasks refreshed. Current status: ${completedTasks.where((task) => task).length}/${completedTasks.length} completed");
+  }
+
+  /// Debug method to check storage contents
+  void debugStorageContents() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String uid = user.uid;
+    final box = GetStorage();
+
+    Get.log("🔍 === STORAGE DEBUG INFO ===");
+    Get.log("User ID: $uid");
+    Get.log("Task List Length: ${taskList.length}");
+    Get.log("Completed Tasks Length: ${completedTasks.length}");
+    Get.log("Completed Tasks Value: ${completedTasks.value}");
+
+    var savedTasks = box.read('completedTasks_$uid');
+    Get.log("Raw Storage Value: $savedTasks");
+    Get.log("Storage Type: ${savedTasks.runtimeType}");
+
+    if (savedTasks is List) {
+      Get.log("Storage List Length: ${savedTasks.length}");
+      Get.log("Storage List Content: $savedTasks");
+    }
+    Get.log("===============================");
   }
 
   void isCompleted(int index) {
@@ -121,20 +240,34 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
 
     String uid = user.uid;
 
+    Get.log("🔄 Marking task $index as completed");
+
+    // Ensure completedTasks list is properly initialized
+    if (completedTasks.isEmpty || completedTasks.length != taskList.length) {
+      completedTasks.value = List.generate(taskList.length, (index) => false);
+      Get.log(
+          "⚠️ Reinitialized completedTasks list with length ${taskList.length}");
+    }
+
     // Ensure the list is large enough
     if (index >= completedTasks.length) {
       completedTasks
           .addAll(List.filled(index - completedTasks.length + 1, false));
+      Get.log(
+          "⚠️ Extended completedTasks list to length ${completedTasks.length}");
     }
 
     // Mark task as completed
     completedTasks[index] = true;
+    Get.log("✅ Task $index marked as completed");
 
-    // Save updated tasks
+    // Save updated tasks immediately
     saveCompletedTasks();
 
     // Check if all tasks are completed
     bool allDone = completedTasks.every((element) => element == true);
+    Get.log(
+        "📊 Completed tasks: ${completedTasks.where((task) => task).length}/${completedTasks.length}");
 
     if (allDone) {
       box.remove('cashValue_$uid');
@@ -145,6 +278,7 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
+      Get.log("🎉 All tasks completed! Profit tracking reset.");
     }
   }
 
@@ -194,11 +328,18 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
         throw Exception(LOW_BALANCE_TASK_MESSAGE);
       }
 
-      // Fetch tasks if cashVault is 500 or more
-      taskList.value = taskPool;
-      if (completedTasks.isEmpty) {
-        // Initialize completedTasks if it's empty
-        completedTasks.value = List.generate(taskList.length, (index) => false);
+      // Only fetch tasks if cashVault is 500 or more
+      if (cashVault >= MINIMUM_BALANCE_FOR_TASKS) {
+        taskList.value = taskPool;
+        if (completedTasks.isEmpty) {
+          // Initialize completedTasks if it's empty
+          completedTasks.value =
+              List.generate(taskList.length, (index) => false);
+        }
+      } else {
+        // Clear tasks if balance is insufficient
+        taskList.clear();
+        completedTasks.clear();
       }
     } catch (e) {
       Fluttertoast.showToast(

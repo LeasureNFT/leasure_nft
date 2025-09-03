@@ -18,12 +18,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       'accountName': 'Admin JazzCash',
       'accountNumber': '0301-1234567'
     },
-    {
-      'title': 'EasyPaisa',
-      'logoPath': 'assets/images/easypaisa.png',
-      'accountName': 'Admin EasyPaisa',
-      'accountNumber': '0321-7654321'
-    },
+
     {
       'title': 'Meezan Bank',
       'logoPath': 'assets/images/meezanbank.png',

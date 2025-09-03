@@ -21,7 +21,6 @@ class UserWithdrawController extends GetxController {
   var isloading = false.obs;
   RxString selectedPaymentMethod = ''.obs;
   RxList<String> paymentMethods = <String>[
-    'Easypaisa - Telenor Microfinance Bank',
     'JazzCash - Mobilink Microfinance Bank',
     'Habib Bank Limited (HBL)',
     'Allied Bank Limited (ABL)',
