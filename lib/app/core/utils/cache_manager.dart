@@ -6,15 +6,33 @@ import 'package:get/get.dart';
 class CacheManager {
   static final GetStorage _storage = GetStorage();
 
-  /// Clear all application cache
+  /// Clear all application cache (excluding task-related data)
   static Future<void> clearAllCache() async {
     try {
+      // Preserve task-related data before clearing
+      final keys = _storage.getKeys();
+      Map<String, dynamic> taskData = {};
+
+      // Save task-related data
+      for (String key in keys) {
+        if (key.contains('completedTasks') ||
+            key.contains('cashValue') ||
+            key.contains('lastResetDate')) {
+          taskData[key] = _storage.read(key);
+        }
+      }
+
       // Clear GetStorage
       await _storage.erase();
 
+      // Restore task-related data
+      for (String key in taskData.keys) {
+        _storage.write(key, taskData[key]);
+      }
+
       // Clear web-specific cache
       if (kIsWeb) {
-        // Clear localStorage except deviceId
+        // Clear localStorage except deviceId and task data
         final deviceId = html.window.localStorage['deviceId'];
         html.window.localStorage.clear();
         if (deviceId != null) {
@@ -38,26 +56,20 @@ class CacheManager {
         }
       }
 
-      Get.log("✅ All cache cleared successfully");
+      Get.log("✅ Cache cleared successfully (task data preserved)");
     } catch (e) {
       Get.log("❌ Error clearing cache: $e");
     }
   }
 
-  /// Clear specific cache types
+  /// Clear specific cache types (excluding task-related data)
   static Future<void> clearTaskCache() async {
     try {
-      final keys = _storage.getKeys();
-      for (String key in keys) {
-        if (key.contains('completedTasks') ||
-            key.contains('cashValue') ||
-            key.contains('lastResetDate')) {
-          _storage.remove(key);
-        }
-      }
-      Get.log("✅ Task cache cleared");
+      // Task cache clearing disabled - preserve task-related data
+      // Only clear non-task related cache if needed
+      Get.log("✅ Task cache clearing disabled - preserving task data");
     } catch (e) {
-      Get.log("❌ Error clearing task cache: $e");
+      Get.log("❌ Error in task cache method: $e");
     }
   }
 

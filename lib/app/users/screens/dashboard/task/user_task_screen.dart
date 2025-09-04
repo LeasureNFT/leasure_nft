@@ -5,6 +5,7 @@ import 'package:leasure_nft/app/core/app_colors.dart';
 import 'package:leasure_nft/app/core/app_textstyle.dart';
 import 'package:leasure_nft/app/core/widgets/custom_button.dart';
 import 'package:leasure_nft/app/core/widgets/header.dart';
+import 'package:leasure_nft/app/core/widgets/task_shimmer.dart';
 import 'package:leasure_nft/app/routes/app_routes.dart';
 import 'package:leasure_nft/app/users/contollers/user_main_controller.dart';
 import 'package:leasure_nft/app/users/screens/dashboard/task/controller/user_task_controller.dart';
@@ -23,124 +24,169 @@ class UserTaskScreen extends GetView<UserTaskController> {
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
             child: Column(
               children: [
-                Header(
-                  title: "Daily Task",
-                  ontap: () {
-                    final controller1 = Get.put(UserDashboardController());
-                    controller1.changePage(DashboardTab.home.index);
-                    // controller1.pageController
-                    //     .jumpToPage(DashboardTab.home.index);
-                  },
+                Row(
+                  children: [
+                    Expanded(
+                      child: Header(
+                        title: "Daily Task",
+                        ontap: () {
+                          final controller1 =
+                              Get.put(UserDashboardController());
+                          controller1.changePage(DashboardTab.home.index);
+                          // controller1.pageController
+                          //     .jumpToPage(DashboardTab.home.index);
+                        },
+                      ),
+                    ),
+                    // Refresh button
+                    Obx(() => IconButton(
+                          onPressed: controller.isTaskLoading.value
+                              ? null
+                              : () => controller.refreshAllTasks(),
+                          icon: controller.isTaskLoading.value
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.refresh,
+                                  color: AppColors.primaryColor,
+                                ),
+                        )),
+                  ],
                 ),
                 SizedBox(
                   height: 20.h,
                 ),
                 Obx(
                   () => Expanded(
-                    child: controller.isLoading.value
-                        ? Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primaryColor,
-                            ),
-                          )
-                        : controller.errorMsg.value.isNotEmpty
-                            ? _buildBalanceWarning(context, controller.errorMsg.value)
-                            : controller.taskList.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      "No Task Found!",
-                                      style: AppTextStyles.adaptiveText(
-                                              context, 18)
-                                          .copyWith(
-                                              color: AppColors.blackColor300),
-                                    ),
-                                  )
-                                : ListView.builder(
-                                itemCount: controller.taskList.length,
-                                itemBuilder: (context, index) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      // Get.to(() => ViewTaskScreen(
-                                      //       task: controller.taskList[index],
-                                      //     ));
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 10.w, vertical: 10.h),
-                                      margin: EdgeInsets.only(
-                                          bottom: 15.h, right: 5.w, left: 5.w),
-                                      decoration: BoxDecoration(
-                                          color: controller
-                                                      .completedTasks[index] ==
-                                                  true
-                                              ? AppColors.accentColor
-                                              : AppColors.whiteColor,
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                          boxShadow: [
-                                            BoxShadow(
-                                                color: AppColors.blackColor300,
-                                                spreadRadius: 1,
-                                                blurRadius: 5,
-                                                offset: Offset(0, 3))
-                                          ]),
-                                      width: double.infinity,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                              controller.taskList[index]
-                                                  ["task"],
-                                              style: AppTextStyles.adaptiveText(
-                                                      context, 18)
-                                                  .copyWith(
-                                                      color: AppColors
-                                                          .primaryColor,
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                          SizedBox(
-                                            height: 5.h,
-                                          ),
-                                          Text(
-                                              controller.taskList[index]
-                                                  ["description"],
-                                              style: AppTextStyles.adaptiveText(
-                                                      context, 16)
-                                                  .copyWith(
-                                                      color:
-                                                          AppColors.blackColor,
-                                                      fontWeight:
-                                                          FontWeight.normal)),
-                                          SizedBox(
-                                            height: 5.h,
-                                          ),
-                                          CustomButton(
-                                            onPressed: () {
-                                              controller.completedTasks[
-                                                          index] ==
-                                                      true
-                                                  ? null
-                                                  : Get.toNamed(
-                                                      AppRoutes.viewTaskDetail,
-                                                      arguments: {
-                                                        "task": controller
-                                                            .taskList[index],
-                                                        "index": index
-                                                      },
-                                                    );
+                    child: controller.isTaskLoading.value
+                        ? const TaskListShimmer()
+                        : controller.isLoading.value
+                            ? Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primaryColor,
+                                ),
+                              )
+                            : controller.errorMsg.value.isNotEmpty
+                                ? _buildBalanceWarning(
+                                    context, controller.errorMsg.value)
+                                : controller.taskList.isEmpty
+                                    ? Center(
+                                        child: Text(
+                                          "No Task Found!",
+                                          style: AppTextStyles.adaptiveText(
+                                                  context, 18)
+                                              .copyWith(
+                                                  color:
+                                                      AppColors.blackColor300),
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        itemCount: controller.taskList.length,
+                                        itemBuilder: (context, index) {
+                                          return GestureDetector(
+                                            onTap: () {
+                                              // Get.to(() => ViewTaskScreen(
+                                              //       task: controller.taskList[index],
+                                              //     ));
                                             },
-                                            text: controller.completedTasks[
-                                                        index] ==
-                                                    true
-                                                ? "Task Completed"
-                                                : "View Task",
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }),
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: 10.w,
+                                                  vertical: 10.h),
+                                              margin: EdgeInsets.only(
+                                                  bottom: 15.h,
+                                                  right: 5.w,
+                                                  left: 5.w),
+                                              decoration: BoxDecoration(
+                                                  color:
+                                                      controller.completedTasks[
+                                                                  index] ==
+                                                              true
+                                                          ? AppColors
+                                                              .accentColor
+                                                          : AppColors
+                                                              .whiteColor,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.r),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                        color: AppColors
+                                                            .blackColor300,
+                                                        spreadRadius: 1,
+                                                        blurRadius: 5,
+                                                        offset: Offset(0, 3))
+                                                  ]),
+                                              width: double.infinity,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                      controller.taskList[index]
+                                                          ["task"],
+                                                      style: AppTextStyles
+                                                              .adaptiveText(
+                                                                  context, 18)
+                                                          .copyWith(
+                                                              color: AppColors
+                                                                  .primaryColor,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold)),
+                                                  SizedBox(
+                                                    height: 5.h,
+                                                  ),
+                                                  Text(
+                                                      controller.taskList[index]
+                                                          ["description"],
+                                                      style: AppTextStyles
+                                                              .adaptiveText(
+                                                                  context, 16)
+                                                          .copyWith(
+                                                              color: AppColors
+                                                                  .blackColor,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .normal)),
+                                                  SizedBox(
+                                                    height: 5.h,
+                                                  ),
+                                                  CustomButton(
+                                                    onPressed: () {
+                                                      controller.completedTasks[
+                                                                  index] ==
+                                                              true
+                                                          ? null
+                                                          : Get.toNamed(
+                                                              AppRoutes
+                                                                  .viewTaskDetail,
+                                                              arguments: {
+                                                                "task": controller
+                                                                        .taskList[
+                                                                    index],
+                                                                "index": index
+                                                              },
+                                                            );
+                                                    },
+                                                    text:
+                                                        controller.completedTasks[
+                                                                    index] ==
+                                                                true
+                                                            ? "Task Completed"
+                                                            : "View Task",
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }),
                   ),
                 ),
               ],
@@ -175,8 +221,7 @@ class UserTaskScreen extends GetView<UserTaskController> {
               SizedBox(height: 20.h),
               Text(
                 "Insufficient Balance",
-                style: AppTextStyles.adaptiveText(context, 24)
-                    .copyWith(
+                style: AppTextStyles.adaptiveText(context, 24).copyWith(
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
                 ),
@@ -185,8 +230,7 @@ class UserTaskScreen extends GetView<UserTaskController> {
               SizedBox(height: 15.h),
               Text(
                 errorMessage,
-                style: AppTextStyles.adaptiveText(context, 16)
-                    .copyWith(
+                style: AppTextStyles.adaptiveText(context, 16).copyWith(
                   color: AppColors.blackColor,
                   fontWeight: FontWeight.w500,
                 ),
@@ -207,8 +251,7 @@ class UserTaskScreen extends GetView<UserTaskController> {
                   children: [
                     Text(
                       "To access daily tasks, you need:",
-                      style: AppTextStyles.adaptiveText(context, 14)
-                          .copyWith(
+                      style: AppTextStyles.adaptiveText(context, 14).copyWith(
                         color: AppColors.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -216,8 +259,7 @@ class UserTaskScreen extends GetView<UserTaskController> {
                     SizedBox(height: 8.h),
                     Text(
                       "Minimum Balance: 500 PKR",
-                      style: AppTextStyles.adaptiveText(context, 16)
-                          .copyWith(
+                      style: AppTextStyles.adaptiveText(context, 16).copyWith(
                         color: AppColors.primaryColor,
                         fontWeight: FontWeight.bold,
                       ),

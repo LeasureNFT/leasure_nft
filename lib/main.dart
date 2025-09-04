@@ -59,14 +59,8 @@ Future<void> _clearCacheOnStartup() async {
       Get.log("✅ Web cache cleared on startup");
     }
 
-    // Clear GetStorage cache for old data
-    final storage = GetStorage();
-    final keys = storage.getKeys();
-    for (String key in keys) {
-      if (key.contains('completedTasks') || key.contains('cashValue')) {
-        storage.remove(key);
-      }
-    }
+    // Task-related cache clearing disabled - preserve task data
+    // Only clear non-task related cache if needed
 
     Get.log("✅ App cache cleared on startup");
   } catch (e) {

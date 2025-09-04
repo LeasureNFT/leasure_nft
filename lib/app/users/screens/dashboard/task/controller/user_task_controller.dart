@@ -10,6 +10,7 @@ import 'package:leasure_nft/app/core/assets/constant.dart';
 
 class UserTaskController extends GetxController with WidgetsBindingObserver {
   RxBool isLoading = false.obs;
+  RxBool isTaskLoading = true.obs; // For task fetching shimmer
   final commandController = TextEditingController();
   final descriptionController = TextEditingController();
   final urlController = TextEditingController();
@@ -29,24 +30,33 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     super.onInit();
     WidgetsBinding.instance.addObserver(this); // Listen to app lifecycle
 
-    // First get tasks to check balance
-    await getTasks();
+    // Start loading shimmer
+    isTaskLoading.value = true;
 
-    // Always initialize completedTasks list for proper length
-    if (taskList.isNotEmpty) {
-      // Initialize completedTasks with correct length
-      if (completedTasks.isEmpty) {
-        completedTasks.value = List.generate(taskList.length, (index) => false);
+    try {
+      // First get tasks to check balance
+      await getTasks();
+
+      // Always initialize completedTasks list for proper length
+      if (taskList.isNotEmpty) {
+        // Initialize completedTasks with correct length
+        if (completedTasks.isEmpty) {
+          completedTasks.value =
+              List.generate(taskList.length, (index) => false);
+        }
+
+        // FIRST: Load completed tasks to check current state
+        await loadCompletedTasks();
+
+        // SECOND: Check and reset tasks (only if new day)
+        await checkAndResetTasks();
+
+        // Debug storage contents
+        debugStorageContents();
       }
-
-      // Then check and reset tasks
-      await checkAndResetTasks();
-
-      // Load completed tasks
-      await loadCompletedTasks();
-
-      // Debug storage contents
-      debugStorageContents();
+    } finally {
+      // Stop loading shimmer
+      isTaskLoading.value = false;
     }
   }
 
@@ -61,16 +71,24 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       Get.log("🔄 App resumed - checking task status...");
 
-      // Ensure taskList is initialized
-      if (taskList.isEmpty) {
-        taskList.value = taskPool;
+      // Show loading shimmer
+      isTaskLoading.value = true;
+
+      try {
+        // Ensure taskList is initialized
+        if (taskList.isEmpty) {
+          taskList.value = taskPool;
+        }
+
+        await checkAndResetTasks();
+        await loadCompletedTasks();
+        await getTasks();
+
+        Get.log("✅ Task status refreshed after app resume");
+      } finally {
+        // Hide loading shimmer
+        isTaskLoading.value = false;
       }
-
-      await checkAndResetTasks();
-      await loadCompletedTasks();
-      await getTasks();
-
-      Get.log("✅ Task status refreshed after app resume");
     }
   }
 
@@ -91,12 +109,28 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
 
     String? lastResetDate = box.read<String>('lastResetDate');
 
-    if (lastResetDate == null || lastResetDate != currentDate) {
+    // Check if we have completed tasks loaded from Firebase/local storage
+    bool hasCompletedTasks = completedTasks.any((task) => task == true);
+
+    if (lastResetDate == null) {
+      // First time - set the date but don't reset tasks if they're already completed
+      Get.log("🔄 First time setup: setting lastResetDate to $currentDate");
+      box.write('lastResetDate', currentDate);
+
+      if (!hasCompletedTasks) {
+        // Only reset if no tasks are completed
+        completedTasks.value = List.generate(taskList.length, (index) => false);
+        box.write('completedTasks_$uid', completedTasks.value);
+        Get.log("✅ First time: initialized fresh tasks");
+      } else {
+        Get.log("✅ First time: preserving existing completed tasks");
+      }
+    } else if (lastResetDate != currentDate) {
       // New day, reset the tasks
+      Get.log("🔄 New day detected: $lastResetDate -> $currentDate");
       completedTasks.value = List.generate(taskList.length, (index) => false);
 
-      // Clear old cache data
-      await CacheManager.clearTaskCache();
+      // Task cache clearing removed - preserve task-related data
 
       box.write('completedTasks_$uid', completedTasks.value);
       box.write("cashValue_$uid", 0);
@@ -106,21 +140,22 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
       CacheManager.updateCacheTimestamp('tasks_$uid');
 
       try {
+        // Reset Firebase data for new day
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
           'todayProfit': 0.0,
+          'completedTasks_$currentDate':
+              completedTasks.value, // Initialize new day's tasks
+          'lastTaskUpdate': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
-        Get.log("✅ todayProfit reset to 0 for user $uid");
+        Get.log(
+            "✅ New day reset: todayProfit=0, tasks initialized for $currentDate");
       } catch (e) {
-        Get.log("❌ Failed to reset todayProfit: $e");
+        Get.log("❌ Failed to reset Firebase data for new day: $e");
       }
     } else {
-      // Same day - ensure completedTasks has correct length
-      if (completedTasks.length != taskList.length) {
-        completedTasks.value = List.generate(taskList.length, (index) => false);
-        // Load existing completed tasks from storage
-        await loadCompletedTasks();
-      }
+      // Same day - tasks already loaded, just log
+      Get.log("🔄 Same day detected: $currentDate - tasks already loaded");
     }
   }
 
@@ -137,52 +172,141 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     }
 
     String uid = user.uid;
-    Get.log("🔄 Loading completed tasks for user $uid...");
+    String currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    Get.log(
+        "🔄 Loading completed tasks for user $uid for date: $currentDate...");
 
-    // Load the saved completedTasks list from GetStorage
+    // FIRST: Load from local storage (fast access)
     var savedTasks = box.read('completedTasks_$uid');
-    Get.log("📦 Raw saved tasks from storage: $savedTasks");
+    Get.log("📦 Raw saved tasks from local storage: $savedTasks");
 
     if (savedTasks != null && savedTasks is List) {
       // Ensure the saved list is a List<bool> and has correct length
       List<bool> savedList = List<bool>.from(savedTasks);
       Get.log(
-          "📋 Converted saved list: $savedList (length: ${savedList.length})");
+          "📋 Converted local saved list: $savedList (length: ${savedList.length})");
 
       if (savedList.length == taskList.length) {
         completedTasks.value = savedList;
         Get.log(
-            "✅ Loaded ${savedList.where((task) => task).length} completed tasks from storage");
+            "✅ Loaded ${savedList.where((task) => task).length} completed tasks from local storage");
+
+        // SECOND: Sync with Firebase in background (don't wait)
+        _syncWithFirebase(uid, currentDate, savedList);
+        return;
       } else {
-        // Length mismatch - initialize with correct length
-        completedTasks.value = List.generate(taskList.length, (index) => false);
         Get.log(
-            "⚠️ Task count mismatch, reinitialized completedTasks. Expected: ${taskList.length}, Got: ${savedList.length}");
+            "⚠️ Local task count mismatch. Expected: ${taskList.length}, Got: ${savedList.length}");
       }
-    } else {
-      // No saved tasks - initialize with correct length
-      completedTasks.value = List.generate(taskList.length, (index) => false);
-      Get.log(
-          "ℹ️ No saved tasks found, initialized completedTasks with length ${taskList.length}");
     }
+
+    // If no local data or mismatch, try Firebase
+    try {
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+        var firebaseTasks = data?['completedTasks_$currentDate'];
+        Get.log("📦 Raw Firebase tasks for $currentDate: $firebaseTasks");
+
+        if (firebaseTasks != null && firebaseTasks is List) {
+          List<bool> firebaseList = List<bool>.from(firebaseTasks);
+          Get.log(
+              "📦 Converted Firebase tasks: $firebaseList (length: ${firebaseList.length})");
+
+          if (firebaseList.length == taskList.length) {
+            completedTasks.value = firebaseList;
+            // Save to local storage for next time
+            box.write('completedTasks_$uid', completedTasks.value);
+            Get.log(
+                "✅ Loaded ${firebaseList.where((task) => task).length} completed tasks from Firebase");
+            return;
+          } else {
+            Get.log(
+                "⚠️ Firebase task count mismatch. Expected: ${taskList.length}, Got: ${firebaseList.length}");
+          }
+        }
+      }
+    } catch (e) {
+      Get.log("❌ Failed to load tasks from Firebase: $e");
+    }
+
+    // If both local and Firebase fail, initialize fresh
+    completedTasks.value = List.generate(taskList.length, (index) => false);
+    Get.log(
+        "ℹ️ No saved tasks found, initialized completedTasks with length ${taskList.length}");
 
     Get.log(
         "📊 Final completedTasks status: ${completedTasks.where((task) => task).length}/${completedTasks.length} completed");
   }
 
-  void saveCompletedTasks() {
+  // Background sync with Firebase (non-blocking)
+  void _syncWithFirebase(
+      String uid, String currentDate, List<bool> localTasks) async {
+    try {
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+        var firebaseTasks = data?['completedTasks_$currentDate'];
+
+        if (firebaseTasks != null && firebaseTasks is List) {
+          List<bool> firebaseList = List<bool>.from(firebaseTasks);
+
+          // If Firebase has more completed tasks, update local
+          bool hasMoreCompleted = false;
+          for (int i = 0;
+              i < firebaseList.length && i < localTasks.length;
+              i++) {
+            if (firebaseList[i] && !localTasks[i]) {
+              hasMoreCompleted = true;
+              break;
+            }
+          }
+
+          if (hasMoreCompleted) {
+            completedTasks.value = firebaseList;
+            final box = GetStorage();
+            box.write('completedTasks_$uid', firebaseList);
+            Get.log("🔄 Synced with Firebase - updated local tasks");
+          }
+        }
+      }
+    } catch (e) {
+      Get.log("❌ Background Firebase sync failed: $e");
+    }
+  }
+
+  void saveCompletedTasks() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     final box = GetStorage();
     String uid = user.uid;
+    String currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
+    // Save to local storage
     box.write('completedTasks_$uid', completedTasks.value);
+
+    // Save to Firebase
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'completedTasks_$currentDate': completedTasks.value,
+        'lastTaskUpdate': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      Get.log(
+          "✅ Task completion data saved to Firebase for date: $currentDate");
+    } catch (e) {
+      Get.log("❌ Failed to save task completion to Firebase: $e");
+    }
 
     // Debug logging
     int completedCount = completedTasks.where((task) => task).length;
     Get.log(
-        "💾 Saved ${completedCount}/${completedTasks.length} completed tasks for user $uid");
+        "💾 Saved ${completedCount}/${completedTasks.length} completed tasks for user $uid (Local + Firebase)");
   }
 
   void updateRating(double newRating) {
@@ -207,6 +331,22 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     await loadCompletedTasks();
     Get.log(
         "✅ Completed tasks refreshed. Current status: ${completedTasks.where((task) => task).length}/${completedTasks.length} completed");
+  }
+
+  /// Refresh all tasks with loading shimmer
+  Future<void> refreshAllTasks() async {
+    isTaskLoading.value = true;
+
+    try {
+      await getTasks();
+      if (taskList.isNotEmpty) {
+        await loadCompletedTasks();
+        await checkAndResetTasks();
+      }
+      Get.log("✅ All tasks refreshed successfully");
+    } finally {
+      isTaskLoading.value = false;
+    }
   }
 
   /// Debug method to check storage contents
@@ -260,6 +400,7 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     // Mark task as completed
     completedTasks[index] = true;
     Get.log("✅ Task $index marked as completed");
+    Get.log("📊 Current completed tasks: ${completedTasks.value}");
 
     // Save updated tasks immediately
     saveCompletedTasks();
@@ -594,3 +735,25 @@ class UserTaskController extends GetxController with WidgetsBindingObserver {
     },
   ];
 }
+// [GETX] ✅ User ID: H5vT4Rei47REOZjL7li92KJdFCE2
+// [GETX] 🧮 Fetched cashVault: 1099.0190146848367
+// [GETX] 🧮 Fetched referralProfit: 99.019014684837
+// [GETX] 📦 Local stored cashValue: 1093.5512583928723
+// [GETX] 💰 Calculated profit (0.5% of 1093.5512583928723): 5.467756291964362
+// [GETX] 📦 today profit: 5.467756291964362
+// [GETX] 📈 New cashVault after profit: 1104.4867709768012
+// [GETX] 📈 New referralProfit after profit: 104.48677097680137
+// ✅ Real-time User Data Updated: imran
+// [GETX] ✅ Updated Firestore with new cashVault and referralProfit.
+// ✅ Real-time User Data Updated: imran
+// [GETX] 🔄 Marking task 1 as completed
+// [GETX] ✅ Task 1 marked as completed
+// [GETX] 📊 Current completed tasks: [true, true, false, false]
+// [GETX] 📊 Completed tasks: 2/4
+// [GETX] ✅ Task submitted: Profit Rs 5.467756291964362
+// [GETX] CLOSE TO ROUTE /viewTaskDetail
+// ✅ Task submitted successfully! Profit: Rs 5.467756291964362 added.
+// ✅ Real-time User Data Updated: imran
+// [GETX] ✅ Task completion data saved to Firebase for date: 2025-09-05
+// [GETX] 💾 Saved 2/4 completed tasks for user H5vT4Rei47REOZjL7li92KJdFCE2 (Local + Firebase)
+// ✅ Real-time User Data Updated: imran
